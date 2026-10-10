@@ -170,6 +170,9 @@ model EvidenceItem {
   extractedText String?
   language String?
   checksum String?
+  matchScore Float?
+  sourceId String?
+  scrapedSource ScrapedSource? @relation(fields: [sourceId], references: [id])
   createdAt DateTime @default(now())
   statusHistories StatusHistory[]
 }
@@ -236,4 +239,28 @@ model GovernmentPeriod {
   totalSeats Int
   governor String
   oathVenue String?
+}
+
+model ScrapedSource {
+  id          String      @id @default(uuid())
+  name        String
+  url         String
+  sourceType  SourceType
+  sourceTier  SourceTier
+  categoryTag String?
+  isActive    Boolean     @default(true)
+  lastScrapedAt DateTime?
+  createdAt   DateTime    @default(now())
+  evidenceItems EvidenceItem[]
+}
+
+model ScrapeRun {
+  id                  String    @id @default(uuid())
+  startedAt           DateTime  @default(now())
+  completedAt         DateTime?
+  status              String    // RUNNING, SUCCESS, FAILED
+  itemsDiscovered     Int       @default(0)
+  itemsMatched        Int       @default(0)
+  itemsPendingReview  Int       @default(0)
+  logDetails          String?
 }

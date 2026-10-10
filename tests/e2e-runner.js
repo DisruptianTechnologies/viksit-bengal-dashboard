@@ -15,6 +15,7 @@ import * as frontendViewsTier1 from './tier1-feature-coverage/frontend-views.tie
 import * as leafletMapTier1 from './tier1-feature-coverage/leaflet-map.tier1.test.js';
 import * as accessibilityTier1 from './tier1-feature-coverage/accessibility.tier1.test.js';
 import * as localizationTier1 from './tier1-feature-coverage/localization.tier1.test.js';
+import * as scraperTallyChatTier1 from './tier1-feature-coverage/scraper-tally-chat.tier1.test.js';
 
 import * as authTier2 from './tier2-boundaries/auth-boundaries.tier2.test.js';
 import * as districtsTier2 from './tier2-boundaries/districts-boundaries.tier2.test.js';
@@ -57,6 +58,7 @@ const SUITES = [
   { tier: '1', name: 'Tier 1: Interactive Leaflet Map (23 Districts & Popups)', runner: leafletMapTier1.run },
   { tier: '1', name: 'Tier 1: Accessibility (WCAG 2.2 AA Contrast, Skip Link, ARIA)', runner: accessibilityTier1.run },
   { tier: '1', name: 'Tier 1: Dynamic Locale & next-intl (Bilingual EN/BN & Numerals)', runner: localizationTier1.run },
+  { tier: '1', name: 'Tier 1: Automated Scraper, Tally Engine & Citizen AI Chatbot', runner: scraperTallyChatTier1.run },
 
   // Tier 2
   { tier: '2', name: 'Tier 2: Auth Boundaries (Empty DTOs, Tampered & Expired Tokens)', runner: authTier2.run },

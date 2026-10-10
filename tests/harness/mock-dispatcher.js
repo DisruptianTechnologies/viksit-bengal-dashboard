@@ -97,9 +97,23 @@ export class MockDispatcher {
     if (!authHeader || !authHeader.startsWith('Bearer ')) return null;
     const token = authHeader.slice(7);
     const parts = token.split('.');
-    if (parts.length !== 3) return null;
+    let payloadPart = null;
+    let signaturePart = null;
+
+    if (parts.length === 3) {
+      payloadPart = parts[1];
+      signaturePart = parts[2];
+    } else if (parts.length === 4) {
+      payloadPart = parts[2];
+      signaturePart = parts[3];
+    } else {
+      return null;
+    }
+
+    if (signaturePart !== 'signature') return null;
+
     try {
-      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf8'));
+      const payload = JSON.parse(Buffer.from(payloadPart, 'base64').toString('utf8'));
       if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null;
       return payload;
     } catch {
@@ -183,10 +197,16 @@ export class MockDispatcher {
       return { status: 400, data: { message: `Invalid status enum: ${dto.status}` } };
     }
 
+    const allowedKeys = ['code', 'titleEn', 'titleBn', 'descriptionEn', 'descriptionBn', 'status', 'confidence', 'categoryId', 'isKeyPromise', 'deadlineDate'];
+    const sanitizedDto = {};
+    for (const key of allowedKeys) {
+      if (dto[key] !== undefined) sanitizedDto[key] = dto[key];
+    }
+
     const newPromise = {
       id: `prom-${Date.now()}`,
-      ...dto,
-      status: dto.status || 'NOT_STARTED',
+      ...sanitizedDto,
+      status: sanitizedDto.status || 'NOT_STARTED',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       statusHistory: [{ status: dto.status || 'NOT_STARTED', timestamp: new Date().toISOString() }],
@@ -288,5 +308,95 @@ export class MockDispatcher {
     found.values.push(dto);
     found.currentValue = dto.value;
     return { status: 201, data: dto };
+  }
+
+  handleGetScraperSources() {
+    return {
+      status: 200,
+      data: [
+        { id: 'src-1', name: 'West Bengal Official Gazette', sourceType: 'GAZETTE', sourceTier: 'TIER_1', isActive: true },
+        { id: 'src-2', name: 'PIB Kolkata', sourceType: 'STATISTICAL_RELEASE', sourceTier: 'TIER_1', isActive: true },
+        { id: 'src-3', name: 'Egiye Bangla Orders', sourceType: 'GOVERNMENT_ORDER', sourceTier: 'TIER_1', isActive: true },
+        { id: 'src-4', name: 'CAG Bengal Desk', sourceType: 'AUDIT', sourceTier: 'TIER_1', isActive: true },
+        { id: 'src-5', name: 'Tea Board of India', sourceType: 'INSTITUTIONAL_REPORT', sourceTier: 'TIER_2', isActive: true },
+        { id: 'src-6', name: 'The Telegraph Bengal Desk', sourceType: 'NEWSPAPER', sourceTier: 'TIER_3', isActive: true }
+      ]
+    };
+  }
+
+  handleRunScraperJob() {
+    return {
+      status: 200,
+      data: {
+        runId: 'run-mock-1',
+        itemsDiscovered: 6,
+        itemsMatched: 4,
+        itemsPendingReview: 4
+      }
+    };
+  }
+
+  handleGetDailyTally() {
+    return {
+      status: 200,
+      data: {
+        date: new Date().toISOString(),
+        todayVerifiedItemsCount: 6,
+        todayPromisesMovedCount: 4,
+        totalDeliveredPromises: 12,
+        totalUnderImplementation: 38,
+        totalFundedAmountCr: 1830,
+        recentEvidences: [
+          {
+            id: 'ev-mock-1',
+            title: 'West Bengal Gazette Order: Darjeeling Tea Replantation & GI Protection Special Grant',
+            publisher: 'Department of Commerce & Industries',
+            sourceTier: 'TIER_1',
+            publishedAt: new Date().toISOString(),
+            matchedPromiseCode: 'TEA-01',
+            matchedPromiseTitle: 'Tea Industry Modernisation',
+            proposedStatus: 'FUNDED',
+            excerpt: '₹250 Crore sanctioned for tea replantation.'
+          }
+        ]
+      }
+    };
+  }
+
+  handleSubmitCitizenEvidence(dto) {
+    return {
+      status: 201,
+      data: {
+        success: true,
+        evidenceId: `ev-cit-${Date.now()}`,
+        message: 'Citizen evidence submitted successfully.'
+      }
+    };
+  }
+
+  handleQueryChat(dto) {
+    const isBn = dto.locale === 'bn';
+    return {
+      status: 200,
+      data: {
+        answer: isBn
+          ? 'পশ্চিমবঙ্গের ১ ট্রিলিয়ন ডলারের লক্ষ্যমাত্রা অর্জনে শিল্প, বন্দর করিডোর এবং চা শিল্পের উন্নয়ন সর্বোচ্চ অগ্রাধিকারে রয়েছে।'
+          : 'West Bengal targets a $1 Trillion economy through modern port logistics, manufacturing corridors, and GI tea revitalization.',
+        locale: dto.locale || 'en',
+        citations: [
+          {
+            sourceTitle: 'State Economic & Governance Manifesto 2026',
+            sourceUrl: 'https://wb.gov.in',
+            sourceTier: 'TIER_1'
+          }
+        ],
+        suggestedFollowUps: isBn
+          ? ['চা শিল্পের প্রতিশ্রুতি', '১ কোটি চাকরির লক্ষ্যমাত্রা']
+          : ['Tea industry promises', '1 crore youth jobs progress'],
+        matchedPromises: [
+          { code: 'TEA-01', title: 'Tea Modernisation', status: 'FUNDED' }
+        ]
+      }
+    };
   }
 }

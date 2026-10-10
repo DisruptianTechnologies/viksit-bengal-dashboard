@@ -48,6 +48,7 @@ export default async function HomePage({
   return (
     <main className="min-h-screen bg-stone-50/60 pb-16">
       <DashboardClient
+        locale={locale}
         districts={formattedDistricts}
         promises={promises}
         indicators={indicators}

@@ -116,5 +116,38 @@
     "filter": "Filter",
     "clear": "Clear",
     "more": "Learn more"
+  },
+  "DailyTally": {
+    "title": "Today's Verified Governance Tally",
+    "subtitle": "Daily intake of gazettes, cabinet sanctions, and verified field updates",
+    "verifiedToday": "Verified Updates Today",
+    "promisesMoved": "Promises Progressed",
+    "fundingTracked": "Funding Sanctioned Tracked",
+    "submitGroundEvidence": "Submit Ground Evidence",
+    "viewSource": "View Source Document",
+    "shareWhatsApp": "Share to WhatsApp",
+    "shareTwitter": "Share to X",
+    "noUpdates": "No new updates recorded yet today.",
+    "liveSync": "Daily 06:00 IST Automated Scraper Sync Active"
+  },
+  "CitizenChatbot": {
+    "title": "Sonar Bondhu — Bengal Policy Assistant",
+    "subtitle": "Instant, fact-checked answers on promises, $1T goals & districts",
+    "placeholder": "Ask about promises, districts, $1T economy...",
+    "send": "Send",
+    "suggestedQueries": "Suggested Queries",
+    "citationsTitle": "Verified Sources & Citations",
+    "disclaimer": "Answers are grounded strictly in state gazettes, verified orders & economic targets.",
+    "openChat": "Ask Bengal AI Assistant",
+    "closeChat": "Close AI Assistant"
+  },
+  "DistrictLeaderboard": {
+    "title": "23-District Accountability & Delivery Index",
+    "subtitle": "District ranking by promise implementation rate, population & GSDP share",
+    "rank": "Rank",
+    "district": "District",
+    "deliveryRate": "Delivery Rate",
+    "population": "Population",
+    "gsdpShare": "GSDP Contribution"
   }
 }

@@ -7,6 +7,10 @@ import { DistrictsModule } from './districts/districts.module';
 import { PromisesModule } from './promises/promises.module';
 import { EvidenceModule } from './evidence/evidence.module';
 import { IndicatorsModule } from './indicators/indicators.module';
+import { LlmModule } from './llm/llm.module';
+import { TallyModule } from './tally/tally.module';
+import { ScraperModule } from './scraper/scraper.module';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -16,6 +20,10 @@ import { IndicatorsModule } from './indicators/indicators.module';
     PromisesModule,
     EvidenceModule,
     IndicatorsModule,
+    LlmModule,
+    TallyModule,
+    ScraperModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

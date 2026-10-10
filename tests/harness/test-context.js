@@ -151,4 +151,44 @@ export class TestContext {
     const res = this.mockDispatcher.handleCreateIndicatorValue(code, dto, authHeader);
     return { ok: res.status === 201, status: res.status, data: res.data };
   }
+
+  async getScraperSources() {
+    if (this.isLive) {
+      return this.apiClient.get('/scraper/sources');
+    }
+    const res = this.mockDispatcher.handleGetScraperSources();
+    return { ok: res.status === 200, status: res.status, data: res.data };
+  }
+
+  async runScraperJob() {
+    if (this.isLive) {
+      return this.apiClient.post('/scraper/run', {});
+    }
+    const res = this.mockDispatcher.handleRunScraperJob();
+    return { ok: res.status === 200 || res.status === 201, status: res.status, data: res.data };
+  }
+
+  async getDailyTally() {
+    if (this.isLive) {
+      return this.apiClient.get('/scraper/daily-tally');
+    }
+    const res = this.mockDispatcher.handleGetDailyTally();
+    return { ok: res.status === 200, status: res.status, data: res.data };
+  }
+
+  async submitCitizenEvidence(dto) {
+    if (this.isLive) {
+      return this.apiClient.post('/scraper/citizen-evidence', dto);
+    }
+    const res = this.mockDispatcher.handleSubmitCitizenEvidence(dto);
+    return { ok: res.status === 201, status: res.status, data: res.data };
+  }
+
+  async queryChat(dto) {
+    if (this.isLive) {
+      return this.apiClient.post('/chat/query', dto);
+    }
+    const res = this.mockDispatcher.handleQueryChat(dto);
+    return { ok: res.status === 200, status: res.status, data: res.data };
+  }
 }
