@@ -41,7 +41,15 @@ export default function Footer() {
                   href={`/${locale}`}
                   className="text-stone-300 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded py-1 inline-block"
                 >
-                  {t("home")}
+                  {locale === "bn" ? "ল্যান্ডিং পেজ" : "Landing Overview"}
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href={`/${locale}/dashboard`}
+                  className="text-stone-300 hover:text-white transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded py-1 inline-block"
+                >
+                  {locale === "bn" ? "মূল ড্যাশবোর্ড" : "Live Dashboard"}
                 </Link>
               </li>
               <li>

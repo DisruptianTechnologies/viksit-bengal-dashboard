@@ -12,6 +12,12 @@ export default function Header() {
       role="banner"
       className="bg-primary text-white border-b border-emerald-900 shadow-md sticky top-0 z-40 transition-colors"
     >
+      {/* Indian National Flag (Tricolour: Saffron, White, India Green) Ribbon */}
+      <div className="w-full h-1.5 flex" aria-hidden="true">
+        <div className="flex-1 bg-[#FF671F]" />
+        <div className="flex-1 bg-white" />
+        <div className="flex-1 bg-[#0A5C36]" />
+      </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
           {/* Brand Logo and Title */}
@@ -45,9 +51,15 @@ export default function Header() {
           >
             <Link
               href={`/${locale}`}
-              className="min-h-[44px] px-3.5 py-2 rounded-md text-sm font-medium text-white hover:bg-emerald-800 transition-colors flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 ring-offset-primary"
+              className="min-h-[44px] px-3 py-2 rounded-md text-sm font-medium text-white hover:bg-emerald-800 transition-colors flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 ring-offset-primary"
             >
-              {t("home")}
+              {locale === "bn" ? "হোম / ল্যান্ডিং" : "Home"}
+            </Link>
+            <Link
+              href={`/${locale}/dashboard`}
+              className="min-h-[44px] px-3 py-2 rounded-md text-sm font-medium text-white hover:bg-emerald-800 transition-colors flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 ring-offset-primary"
+            >
+              {locale === "bn" ? "ড্যাশবোর্ড" : "Dashboard"}
             </Link>
             <Link
               href={`/${locale}/promises`}

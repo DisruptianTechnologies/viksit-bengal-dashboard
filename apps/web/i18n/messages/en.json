@@ -16,6 +16,7 @@
   "Navigation": {
     "brand": "Viksit Bengal",
     "home": "Overview",
+    "dashboard": "Live Dashboard",
     "promises": "Promises",
     "districts": "Districts",
     "indicators": "Indicators",
@@ -149,5 +150,27 @@
     "deliveryRate": "Delivery Rate",
     "population": "Population",
     "gsdpShare": "GSDP Contribution"
+  },
+  "LandingPage": {
+    "heroBadge": "National Vision 2030 • Viksit Bengal",
+    "heroTitlePrefix": "Architecting Bengal's",
+    "heroTitleHighlight": "$1 Trillion Economy",
+    "heroDescription": "West Bengal's high-fidelity governance intelligence platform. Tracking 141 developmental commitments, real-time macroeconomic indicators, and daily verified policy actions across all 23 districts.",
+    "exploreDashboard": "Explore Live Dashboard",
+    "trackPromises": "Track 141 Promises",
+    "districtIndex": "23-District Index",
+    "todayChanges": "Today's Verified Changes",
+    "todayChangesSubtitle": "Real-time daily scrapers reconcile official government gazettes, cabinet sanctions, and ministry orders.",
+    "corePillarsTitle": "Strategic Governance Pillars",
+    "corePillarsSubtitle": "Direct access to key accountability and economic modules across the platform",
+    "pillar1Title": "GSDP Macroeconomic Trajectory",
+    "pillar1Desc": "Scenario models targeting $1,000 Billion GSDP with CAG, RBI, and CSO baseline metrics.",
+    "pillar2Title": "141 Sectoral Promises",
+    "pillar2Desc": "Filterable database across Industry, Deep Seaport, Agriculture, Education & Power.",
+    "pillar3Title": "23-District Delivery Index",
+    "pillar3Desc": "Geographic map and ranking by implementation rate, population, and district contribution.",
+    "pillar4Title": "Sonar Bondhu AI Assistant",
+    "pillar4Desc": "Bilingual factual AI powered by OpenRouter and RAG grounded in verified state gazettes.",
+    "enterModule": "Open Module"
   }
 }
