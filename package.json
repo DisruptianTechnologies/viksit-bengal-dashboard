@@ -1,11 +1,11 @@
 {
   "name": "viksit-bengal-dashboard",
-  "packageManager": "npm@10.9.1",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
-    "dev": "turbo run dev",
-    "lint": "turbo run lint",
+    "build": "npm run build --workspace=apps/web",
+    "dev": "npm run dev --workspace=apps/web",
+    "start": "npm run start --workspace=apps/web",
+    "lint": "npm run lint --workspace=apps/web",
     "test:e2e": "node tests/e2e-runner.js"
   },
   "devDependencies": {

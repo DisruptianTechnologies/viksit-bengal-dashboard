@@ -1,10 +1,20 @@
 import '@/globals.css';
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { locales, type Locale } from '@/i18n';
+
+export const metadata: Metadata = {
+  title: 'Viksit Bengal Dashboard',
+  description: 'West Bengal Governance, Policy Commitments, and $1 Trillion Economic Progress Tracker across 23 districts.',
+  openGraph: {
+    title: 'Viksit Bengal Dashboard',
+    description: 'West Bengal Governance, Policy Commitments, and $1 Trillion Economic Progress Tracker across 23 districts.',
+  },
+};
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
