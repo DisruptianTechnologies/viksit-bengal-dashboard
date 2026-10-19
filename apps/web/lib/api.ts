@@ -7,30 +7,36 @@ import {
   CitizenEvidenceSubmissionDto,
 } from '@viksit/shared';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Supports NEXT_PUBLIC_API_URL (e.g. http://localhost:3001) or built-in Next.js /api routes on port 3000
+const CONFIGURED_API_URL = process.env.NEXT_PUBLIC_API_URL || '';
+
+function resolveApiUrl(path: string): string {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  if (typeof window !== 'undefined') {
+    // Use same-origin /api routes in browser for zero-latency, resilient full-stack operation
+    return `/api${cleanPath}`;
+  }
+  const baseUrl = CONFIGURED_API_URL || 'http://127.0.0.1:3000/api';
+  return `${baseUrl}${cleanPath}`;
+}
 
 export async function fetchApi<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const url = `${API_URL}${path.startsWith('/') ? path : `/${path}`}`;
-  try {
-    const res = await fetch(url, {
-      ...options,
-      headers: {
-        'Content-Type': 'application/json',
-        ...options.headers,
-      },
-      cache: 'no-store',
-    });
+  const url = resolveApiUrl(path);
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      'Content-Type': 'application/json',
+      ...options.headers,
+    },
+    cache: 'no-store',
+  });
 
-    if (!res.ok) {
-      const errorText = await res.text();
-      throw new Error(`API error ${res.status}: ${errorText}`);
-    }
-
-    return res.json();
-  } catch (err: any) {
-    // If backend is unreachable in dev/preview, return safe fallbacks where possible
-    throw err;
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`API error ${res.status}: ${errorText}`);
   }
+
+  return res.json();
 }
 
 export async function getDistricts() {
@@ -38,7 +44,8 @@ export async function getDistricts() {
 }
 
 export async function getDistrictByCode(code: string) {
-  return fetchApi<any>(`/districts/${encodeURIComponent(code)}`);
+  const districts = await getDistricts();
+  return districts.find((d) => d.code?.toUpperCase() === code.toUpperCase()) || null;
 }
 
 export async function getPromises(query: Record<string, string> = {}) {
@@ -47,7 +54,8 @@ export async function getPromises(query: Record<string, string> = {}) {
 }
 
 export async function getPromiseByCode(code: string) {
-  return fetchApi<any>(`/promises/${encodeURIComponent(code)}`);
+  const promises = await getPromises();
+  return promises.find((p) => p.code?.toUpperCase() === code.toUpperCase()) || null;
 }
 
 export async function getIndicators() {
@@ -60,45 +68,7 @@ export async function getEvidence(query: Record<string, string> = {}) {
 }
 
 export async function getDailyTally(): Promise<DailyTallyMetrics> {
-  try {
-    return await fetchApi<DailyTallyMetrics>('/scraper/daily-tally');
-  } catch {
-    // Fallback daily data if server is offline
-    return {
-      date: new Date().toISOString(),
-      todayVerifiedItemsCount: 6,
-      todayPromisesMovedCount: 4,
-      totalDeliveredPromises: 12,
-      totalUnderImplementation: 38,
-      totalFundedAmountCr: 1830,
-      recentEvidences: [
-        {
-          id: 'fb-1',
-          title: 'West Bengal Gazette Order: Darjeeling Tea Replantation & GI Protection Special Grant',
-          publisher: 'Department of Commerce & Industries, Govt of West Bengal',
-          sourceUrl: 'https://wb.gov.in/gazette',
-          sourceTier: 'TIER_1',
-          publishedAt: new Date().toISOString(),
-          matchedPromiseCode: 'TEA-01',
-          matchedPromiseTitle: 'Tea Industry Modernisation & GI Enforcement',
-          proposedStatus: 'FUNDED',
-          excerpt: 'Sanction of ₹250 Crore for Darjeeling and Dooars tea replantation and GI tag protection.',
-        },
-        {
-          id: 'fb-2',
-          title: 'PIB Kolkata: Coastal Deep-Sea Fishing Trawlers Subsidies Released Under PM Matsya Sampada',
-          publisher: 'Press Information Bureau, Kolkata',
-          sourceUrl: 'https://pib.gov.in',
-          sourceTier: 'TIER_1',
-          publishedAt: new Date().toISOString(),
-          matchedPromiseCode: 'FISH-01',
-          matchedPromiseTitle: 'Deep Sea Fishing Fleet Modernisation',
-          proposedStatus: 'FUNDED',
-          excerpt: '₹180 Crore released for Petuaghat & Shankarpur harbor modernization.',
-        },
-      ],
-    };
-  }
+  return fetchApi<DailyTallyMetrics>('/scraper/daily-tally');
 }
 
 export async function getScraperSources(): Promise<ScrapedSourceDto[]> {
@@ -123,31 +93,10 @@ export async function submitCitizenEvidence(dto: CitizenEvidenceSubmissionDto) {
 }
 
 export async function queryChat(dto: ChatQueryRequest): Promise<ChatQueryResponse> {
-  try {
-    return await fetchApi<ChatQueryResponse>('/chat/query', {
-      method: 'POST',
-      body: JSON.stringify(dto),
-    });
-  } catch {
-    // Grounded fallback if API server is not running
-    const isBn = dto.locale === 'bn';
-    return {
-      answer: isBn
-        ? 'বর্তমানে লাইভ সার্ভার সংযোগ বিচ্ছিন্ন। তবে আপনি ড্যাশবোর্ডের মাধ্যমে পশ্চিমবঙ্গের সমস্ত প্রতিশ্রুতি, বাজেট বরাদ্দ এবং ১ ট্রিলিয়ন ডলারের লক্ষ্যমাত্রা অন্বেষণ করতে পারেন।'
-        : 'The live AI service is currently operating in offline mode. You can explore all promises, budget allocations, and $1T economic metrics directly via the dashboard panels.',
-      locale: dto.locale || 'en',
-      citations: [
-        {
-          sourceTitle: 'West Bengal Governance & Budget Tracker',
-          sourceUrl: '#',
-          sourceTier: 'TIER_1',
-        },
-      ],
-      suggestedFollowUps: isBn
-        ? ['চা শিল্পের প্রতিশ্রুতি', '১ কোটি চাকরির লক্ষ্যমাত্রা', '$১ ট্রিলিয়ন অর্থনীতি']
-        : ['Status of tea industry promises', '1 crore youth jobs progress', '$1 Trillion GSDP roadmap'],
-    };
-  }
+  return fetchApi<ChatQueryResponse>('/chat/query', {
+    method: 'POST',
+    body: JSON.stringify(dto),
+  });
 }
 
 export async function login(email: string, password: string) {

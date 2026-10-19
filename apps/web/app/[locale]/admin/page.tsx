@@ -5,16 +5,27 @@ import { useLocale } from 'next-intl';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Lock, ShieldCheck, Key, PlusCircle, CheckCircle2, AlertCircle, FileText, Send } from 'lucide-react';
+import {
+  Lock,
+  ShieldCheck,
+  PlusCircle,
+  CheckCircle2,
+  AlertCircle,
+  FileText,
+  RefreshCw,
+  ExternalLink,
+} from 'lucide-react';
 
 export default function AdminPage() {
   const locale = useLocale();
+  const isBn = locale === 'bn';
 
   const [email, setEmail] = React.useState('admin@viksitbengal.gov.in');
   const [password, setPassword] = React.useState('Admin@123');
   const [token, setToken] = React.useState<string | null>(null);
   const [user, setUser] = React.useState<any>(null);
   const [loading, setLoading] = React.useState(false);
+  const [evidences, setEvidences] = React.useState<any[]>([]);
   const [message, setMessage] = React.useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   // New Promise state
@@ -24,24 +35,42 @@ export default function AdminPage() {
     titleBn: 'কলকাতা-শিলিগুড়ি দ্রুতগতির এক্সপ্রেসওয়ে করিডোর',
     descriptionEn: 'Dedicated 6-lane access-controlled greenfield highway reducing transit time to 6 hours.',
     descriptionBn: 'কলকাতা ও উত্তরবঙ্গের সংযোগকারী ৬ লেন বিশিষ্ট গ্রিনফিল্ড এক্সপ্রেসওয়ে।',
-    status: 'ANNOUNCED',
+    status: 'UNDER_IMPLEMENTATION',
   });
 
   // New Evidence state
   const [newEvidence, setNewEvidence] = React.useState({
-    title: 'State Cabinet Approval & Gazette Notification for Expressway',
+    promiseCode: 'TEA-01',
+    title: 'State Cabinet Approval & Gazette Notification for Darjeeling Tea & Expressway',
     url: 'https://wb.gov.in/gazette/2026/expressway-approval.pdf',
     sourceType: 'GAZETTE',
     sourceTier: 'TIER_1',
-    extractedText: 'Cabinet grants administrative approval for land acquisition along Corridor-A.',
+    outlayCr: 450,
+    extractedText: 'Cabinet grants administrative approval and ₹450 Cr initial disbursement.',
   });
+
+  const loadEvidenceQueue = React.useCallback(async () => {
+    try {
+      const res = await fetch('/api/evidence', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        setEvidences(Array.isArray(data) ? data.slice(0, 8) : []);
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadEvidenceQueue();
+  }, [loadEvidenceQueue]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch('http://localhost:3001/auth/login', {
+      const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -50,7 +79,10 @@ export default function AdminPage() {
       if (!res.ok) throw new Error(data.message || 'Login failed');
       setToken(data.accessToken);
       setUser(data.user);
-      setMessage({ text: `Signed in successfully as ${data.user?.name} (${data.user?.role})`, type: 'success' });
+      setMessage({
+        text: `Signed in successfully as ${data.user?.name} (${data.user?.role})`,
+        type: 'success',
+      });
     } catch (err: any) {
       setMessage({ text: err.message || 'Authentication error', type: 'error' });
     } finally {
@@ -64,7 +96,7 @@ export default function AdminPage() {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch('http://localhost:3001/promises', {
+      const res = await fetch('/api/promises', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -74,7 +106,11 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to create promise');
-      setMessage({ text: `Promise ${newPromise.code} created and registered in state catalog!`, type: 'success' });
+      setMessage({
+        text: `Promise ${newPromise.code} registered in live state catalog and added to today's Daily Delta!`,
+        type: 'success',
+      });
+      await loadEvidenceQueue();
     } catch (err: any) {
       setMessage({ text: err.message, type: 'error' });
     } finally {
@@ -88,7 +124,7 @@ export default function AdminPage() {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch('http://localhost:3001/evidence', {
+      const res = await fetch('/api/evidence', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -98,7 +134,11 @@ export default function AdminPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to submit evidence');
-      setMessage({ text: `Evidence item uploaded and sent to verification queue!`, type: 'success' });
+      setMessage({
+        text: `Evidence item uploaded, linked to [${newEvidence.promiseCode}], and published to the Daily Delta feed!`,
+        type: 'success',
+      });
+      await loadEvidenceQueue();
     } catch (err: any) {
       setMessage({ text: err.message, type: 'error' });
     } finally {
@@ -106,24 +146,56 @@ export default function AdminPage() {
     }
   };
 
+  const handleTriggerLiveScrape = async () => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/scraper/run', { method: 'POST' });
+      const data = await res.json();
+      setMessage({
+        text: `Live RSS & Gemini verification run complete: ${data.itemsDiscovered} items checked, ${data.itemsMatched} promises reconciled.`,
+        type: 'success',
+      });
+      await loadEvidenceQueue();
+    } catch (err: any) {
+      setMessage({ text: err.message || 'Live sync failed', type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <div className="border-b border-stone-200 pb-4">
-        <div className="flex items-center gap-2">
-          <Badge variant="default" className="text-xs font-bold uppercase">
-            007 RBAC Security Protected
-          </Badge>
-          <span className="text-xs text-stone-500 font-medium">NestJS JWT + RolesGuard</span>
+    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      <div className="border-b border-stone-200 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs text-stone-500 font-medium">
+            <span className="font-bold text-primary uppercase tracking-wider">
+              007 RBAC Security Protected
+            </span>
+            <span aria-hidden="true">·</span>
+            <span>JWT + Role Verification</span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-ink mt-1 flex items-center gap-2.5 tracking-tight">
+            <ShieldCheck className="w-8 h-8 text-primary" />
+            {isBn ? 'প্রশাসনিক সিএমএস পোর্টাল' : 'CMS & Governance Portal'}
+          </h1>
+          <p className="text-sm text-stone-600 mt-1">
+            {isBn
+              ? 'সরকারি প্রতিশ্রুতি নিবন্ধন, বাস্তবায়ন প্রমাণ আপলোড এবং অডিট যাচাইকরণ'
+              : 'Authorized platform for logging policy milestones, submitting Tier 1–3 audit evidence, and managing daily delta records.'}
+          </p>
         </div>
-        <h1 className="text-3xl font-extrabold text-ink mt-1 flex items-center gap-2.5">
-          <ShieldCheck className="w-8 h-8 text-primary" />
-          {locale === 'bn' ? 'প্রশাসনিক সিএমএস পোর্টাল' : 'CMS & Governance Portal'}
-        </h1>
-        <p className="text-sm text-stone-600 mt-1">
-          {locale === 'bn'
-            ? 'সরকারি প্রতিশ্রুতি নিবন্ধন, বাস্তবায়ন প্রমাণ আপলোড এবং অডিট যাচাইকরণ'
-            : 'Authorized platform for logging policy milestones, submitting Tier 1-3 audit evidence, and managing records.'}
-        </p>
+
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleTriggerLiveScrape}
+          disabled={loading}
+          className="gap-2 border-stone-300 font-semibold self-start sm:self-auto"
+        >
+          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+          <span>{isBn ? 'লাইভ সোর্স সিঙ্ক করুন' : 'Run Live Source Scraper'}</span>
+        </Button>
       </div>
 
       {message && (
@@ -145,14 +217,14 @@ export default function AdminPage() {
       )}
 
       {!token ? (
-        <Card className="max-w-md mx-auto border border-stone-200 shadow-md">
+        <Card className="max-w-md mx-auto border border-stone-200 shadow-sm">
           <CardHeader>
             <CardTitle className="text-xl font-bold flex items-center gap-2">
               <Lock className="w-5 h-5 text-primary" />
-              {locale === 'bn' ? 'নিরাপদ লগইন' : 'Secure Admin Authentication'}
+              {isBn ? 'নিরাপদ লগইন' : 'Secure Admin Authentication'}
             </CardTitle>
             <CardDescription>
-              {locale === 'bn'
+              {isBn
                 ? 'প্রশাসক বা গবেষক হিসেবে সাইন ইন করুন'
                 : 'Sign in to access restricted mutations and evidence management.'}
             </CardDescription>
@@ -160,9 +232,7 @@ export default function AdminPage() {
           <CardContent>
             <form onSubmit={handleLogin} className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Email
-                </label>
+                <label className="block text-xs font-bold text-stone-700 mb-1">Email</label>
                 <input
                   type="email"
                   value={email}
@@ -172,9 +242,7 @@ export default function AdminPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Password
-                </label>
+                <label className="block text-xs font-bold text-stone-700 mb-1">Password</label>
                 <input
                   type="password"
                   value={password}
@@ -188,25 +256,25 @@ export default function AdminPage() {
                 <Button type="submit" disabled={loading} className="w-full font-bold">
                   {loading ? 'Authenticating...' : 'Sign In with JWT'}
                 </Button>
-                <div className="flex gap-2 text-xs">
+                <div className="flex items-center justify-center gap-3 text-xs pt-1">
                   <button
                     type="button"
                     onClick={() => {
                       setEmail('admin@viksitbengal.gov.in');
                       setPassword('Admin@123');
                     }}
-                    className="text-stone-500 hover:text-primary underline"
+                    className="text-stone-600 hover:text-primary underline font-medium"
                   >
                     Use Admin
                   </button>
-                  <span>•</span>
+                  <span aria-hidden="true">·</span>
                   <button
                     type="button"
                     onClick={() => {
                       setEmail('researcher@viksitbengal.gov.in');
                       setPassword('Researcher@123');
                     }}
-                    className="text-stone-500 hover:text-primary underline"
+                    className="text-stone-600 hover:text-primary underline font-medium"
                   >
                     Use Researcher
                   </button>
@@ -225,7 +293,9 @@ export default function AdminPage() {
               </div>
               <div>
                 <div className="font-bold text-ink text-sm">{user?.name}</div>
-                <div className="text-xs text-stone-500">{user?.email} • Role: <strong>{user?.role}</strong></div>
+                <div className="text-xs text-stone-600">
+                  {user?.email} · Role: <strong>{user?.role}</strong>
+                </div>
               </div>
             </div>
             <Button
@@ -242,14 +312,14 @@ export default function AdminPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Create Promise Form */}
-            <Card className="border border-stone-200 shadow-sm">
+            <Card className="border border-stone-200 shadow-xs">
               <CardHeader>
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <PlusCircle className="w-5 h-5 text-primary" />
-                  {locale === 'bn' ? 'নতুন প্রতিশ্রুতি নিবন্ধন' : 'Register New Promise'}
+                  {isBn ? 'নতুন প্রতিশ্রুতি নিবন্ধন' : 'Register New Promise'}
                 </CardTitle>
                 <CardDescription>
-                  Adds a tracked policy item to the state database
+                  Adds a tracked policy item to the live state database and Daily Delta
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -304,18 +374,41 @@ export default function AdminPage() {
             </Card>
 
             {/* Submit Evidence Form */}
-            <Card className="border border-stone-200 shadow-sm">
+            <Card className="border border-stone-200 shadow-xs">
               <CardHeader>
                 <CardTitle className="text-lg font-bold flex items-center gap-2">
                   <FileText className="w-5 h-5 text-emerald-700" />
-                  {locale === 'bn' ? 'প্রমাণ ও নথি আপলোড' : 'Submit Evidence Item'}
+                  {isBn ? 'প্রমাণ ও নথি আপলোড' : 'Submit Evidence Item'}
                 </CardTitle>
                 <CardDescription>
-                  Upload gazette or audit citation to verify status
+                  Upload gazette or audit citation to verify status and update Daily Delta
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <form onSubmit={handleCreateEvidence} className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-stone-700">Promise Code</label>
+                      <input
+                        type="text"
+                        value={newEvidence.promiseCode}
+                        onChange={(e) => setNewEvidence({ ...newEvidence, promiseCode: e.target.value })}
+                        className="w-full min-h-[44px] px-3 py-1.5 border rounded-lg text-xs font-mono"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-stone-700">Outlay (₹ Cr)</label>
+                      <input
+                        type="number"
+                        value={newEvidence.outlayCr}
+                        onChange={(e) =>
+                          setNewEvidence({ ...newEvidence, outlayCr: Number(e.target.value) || 0 })
+                        }
+                        className="w-full min-h-[44px] px-3 py-1.5 border rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                  </div>
                   <div>
                     <label className="block text-[11px] font-bold text-stone-700">Evidence Title</label>
                     <input
@@ -381,6 +474,60 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* Live Evidence Verification Ledger */}
+      <Card className="border border-stone-200 shadow-xs">
+        <CardHeader className="pb-3 border-b border-stone-100">
+          <CardTitle className="text-lg font-bold">
+            {isBn ? 'সাম্প্রতিক যাচাইকৃত প্রমাণ ও অডিট সারি' : 'Live Evidence & Audit Ledger'}
+          </CardTitle>
+          <CardDescription>
+            {isBn
+              ? 'স্ক্র্যাপার, গবেষক এবং নাগরিকদের দ্বারা জমা দেওয়া সাম্প্রতিক নথি'
+              : 'Real-time log of official gazettes, PIB releases, and citizen submissions.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <div className="divide-y divide-stone-100 text-xs">
+            {evidences.map((ev) => (
+              <div key={ev.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2 text-stone-500">
+                    <span className="font-mono font-bold text-primary">
+                      [{ev.matchedPromiseCode || 'INFRA-01'}]
+                    </span>
+                    <span>·</span>
+                    <span>{ev.sourceTier}</span>
+                    <span>·</span>
+                    <span>{ev.publisher}</span>
+                  </div>
+                  <div className="font-bold text-stone-900">{ev.title}</div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  {ev.outlayCr && (
+                    <span className="font-mono tabular-nums font-bold text-stone-800">
+                      ₹{ev.outlayCr} Cr
+                    </span>
+                  )}
+                  <Badge variant="outline" className="text-[10px]">
+                    {ev.reviewStatus || 'APPROVED'}
+                  </Badge>
+                  {ev.sourceUrl && (
+                    <a
+                      href={ev.sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

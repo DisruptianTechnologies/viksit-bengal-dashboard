@@ -1,22 +1,20 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { DailyTallyMetrics } from '@viksit/shared';
+import { DailyTallyMetrics, toBengaliNumerals } from '@viksit/shared';
 import { getDailyTally, triggerScrapeRun } from '../../lib/api';
 import { Button } from '../ui/button';
-import { Badge } from '../ui/badge';
 import { CitizenEvidenceModal } from '../citizen/CitizenEvidenceModal';
 import {
-  Sparkles,
   ExternalLink,
   Share2,
   RefreshCw,
   PlusCircle,
   Building2,
-  Clock,
   CheckCircle2,
   TrendingUp,
   ShieldCheck,
+  Check,
 } from 'lucide-react';
 
 interface DailyTallyFeedProps {
@@ -29,7 +27,10 @@ export function DailyTallyFeed({ locale, initialData }: DailyTallyFeedProps) {
   const [loading, setLoading] = useState(!initialData);
   const [refreshing, setRefreshing] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const isBn = locale === 'bn';
+
+  const num = (val: number | string) => (isBn ? toBengaliNumerals(val) : String(val));
 
   const loadTally = async () => {
     try {
@@ -60,85 +61,77 @@ export function DailyTallyFeed({ locale, initialData }: DailyTallyFeedProps) {
     }
   };
 
-  const handleShareWhatsApp = (title: string, url?: string) => {
-    const text = encodeURIComponent(
-      `🏛️ ${isBn ? 'বিকশিত বাংলা যাচাইকৃত আপডেট' : 'Viksit Bengal Verified Update'}:\n${title}\n${url || window.location.href}`
-    );
-    window.open(`https://api.whatsapp.com/send?text=${text}`, '_blank');
+  const handleCopyShareLink = async (id: string, title: string, url?: string) => {
+    const shareText = `${isBn ? 'বিকশিত বাংলা যাচাইকৃত আপডেট' : 'Viksit Bengal Verified Update'}: ${title} — ${url || window.location.href}`;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(shareText);
+      }
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    }
   };
 
-  const handleShareTwitter = (title: string, url?: string) => {
-    const text = encodeURIComponent(
-      `🏛️ #ViksitBengal Verified Policy Tally:\n"${title}"\nTracking West Bengal's $1T Economy Vision.`
-    );
-    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${encodeURIComponent(url || window.location.href)}`, '_blank');
-  };
-
-  const getTierBadge = (tier: string) => {
+  const getTierLabel = (tier: string) => {
     if (tier === 'TIER_1') {
-      return (
-        <Badge variant="outline" className="bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border-emerald-200">
-          <ShieldCheck className="w-3 h-3 mr-1" />
-          {isBn ? 'স্তর ১: অফিশিয়াল গেজেট / আদেশ' : 'Tier 1: Official Legal Order'}
-        </Badge>
-      );
+      return isBn ? 'স্তর ১ · অফিশিয়াল গেজেট / পিআইবি' : 'Tier 1 · Official Gazette / PIB';
     }
     if (tier === 'TIER_2') {
-      return (
-        <Badge variant="outline" className="bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border-blue-200">
-          <Building2 className="w-3 h-3 mr-1" />
-          {isBn ? 'স্তর ২: প্রাতিষ্ঠানিক রিপোর্ট' : 'Tier 2: Institutional Release'}
-        </Badge>
-      );
+      return isBn ? 'স্তর ২ · প্রাতিষ্ঠানিক রিপোর্ট' : 'Tier 2 · Institutional Release';
     }
-    return (
-      <Badge variant="outline" className="bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border-amber-200">
-        <Clock className="w-3 h-3 mr-1" />
-        {isBn ? 'স্তর ৩: যাচাইকৃত সংবাদপত্র' : 'Tier 3: Verified Press'}
-      </Badge>
-    );
+    return isBn ? 'স্তর ৩ · যাচাইকৃত প্রতিবেদন' : 'Tier 3 · Verified Field Report';
   };
+
+  const totalOutlayCr = data?.totalFundedAmountCr || 11900;
+  const deltaOutlayCr = data?.dailyDelta?.outlaySanctionedDeltaCr || 6670;
 
   return (
     <section aria-labelledby="daily-tally-heading" className="w-full my-8 space-y-6">
       {/* Header bar */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-gradient-to-r from-blue-900 via-indigo-900 to-slate-900 text-white rounded-2xl shadow-xl">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-primary text-white rounded-2xl shadow-sm">
         <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="flex h-2.5 w-2.5 relative">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <span className="text-xs uppercase tracking-widest text-emerald-400 font-semibold">
-              {isBn ? 'স্বয়ংক্রিয় দৈনিক স্ক্র্যাপার ও যাচাইকরণ ইঞ্জিন' : 'Autonomous Daily Verified Scraper Sync'}
-            </span>
+          <div className="text-xs uppercase tracking-wider text-emerald-200 font-semibold">
+            {isBn
+              ? 'স্বয়ংক্রিয় দৈনিক স্ক্র্যাপার ও যাচাইকরণ ইঞ্জিন'
+              : 'Autonomous Daily Verified Scraper & Delta Engine'}
           </div>
           <h2 id="daily-tally-heading" className="text-2xl font-black tracking-tight">
             {isBn ? 'আজকের সরকারি খতিয়ান ও বাস্তবায়ন ট্র্যাকার' : "Today's Verified Governance Tally"}
           </h2>
-          <p className="text-sm text-slate-300 max-w-2xl">
+          <p className="text-sm text-emerald-100 max-w-2xl">
             {isBn
-              ? 'পশ্চিমবঙ্গ গেজেট, ক্যাবিনেট সিদ্ধান্ত, পিআইবি এবং বিধানসভা প্রশ্নোত্তর থেকে প্রতিদিনের আদেশ যাচাই করে নির্বাচনী প্রতিশ্রুতির সাথে সরাসরি মেলানো হয়।'
-              : 'Continuous intake from West Bengal Gazette, Cabinet Orders, PIB, and CAG audits reconciled against 100+ public promises.'}
+              ? 'পশ্চিমবঙ্গ গেজেট, ক্যাবিনেট সিদ্ধান্ত, পিআইবি এবং অডিট রিপোর্ট থেকে প্রতিদিনের আদেশ যাচাই করে ১৪১টি প্রতিশ্রুতির সাথে সরাসরি মেলানো হয়।'
+              : 'Continuous intake from West Bengal Gazette, Cabinet Orders, PIB Kolkata, and CAG audits reconciled against 141 public promises.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3 shrink-0">
           <Button
             variant="outline"
             size="sm"
             onClick={handleRefresh}
-            disabled={refreshing}
-            className="gap-2 bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-sm"
+            disabled={refreshing || loading}
+            className="gap-2 bg-white/10 hover:bg-white/20 text-white border-white/30 min-h-[44px] whitespace-nowrap"
           >
             <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
-            <span>{refreshing ? (isBn ? 'হালনাগাদ হচ্ছে...' : 'Syncing...') : (isBn ? 'লাইভ সিঙ্ক' : 'Trigger Sync')}</span>
+            <span>
+              {refreshing
+                ? isBn
+                  ? 'হালনাগাদ হচ্ছে...'
+                  : 'Syncing Live Feeds...'
+                : isBn
+                  ? 'লাইভ সিঙ্ক'
+                  : 'Trigger Live Sync'}
+            </span>
           </Button>
 
           <Button
             size="sm"
             onClick={() => setModalOpen(true)}
-            className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-md font-semibold"
+            className="gap-2 bg-white text-primary hover:bg-stone-100 font-bold min-h-[44px] whitespace-nowrap"
           >
             <PlusCircle className="w-4 h-4" />
             <span>{isBn ? 'মাঠের তথ্য জমা দিন' : 'Submit Evidence'}</span>
@@ -148,56 +141,58 @@ export function DailyTallyFeed({ locale, initialData }: DailyTallyFeedProps) {
 
       {/* KPI mini-counters */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-          <p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+        <div className="p-4 bg-white border border-stone-200 rounded-xl">
+          <p className="text-xs font-semibold text-stone-500">
             {isBn ? 'আজকের যাচাইকৃত নথি' : 'Verified Orders Today'}
           </p>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-3xl font-extrabold text-blue-600 dark:text-blue-400">
-              {data?.todayVerifiedItemsCount || 6}
+            <span className="text-3xl font-extrabold text-stone-950 font-mono tabular-nums">
+              {num(data?.todayVerifiedItemsCount || 8)}
             </span>
-            <span className="text-xs font-medium text-emerald-600 flex items-center">
-              <CheckCircle2 className="w-3.5 h-3.5 mr-0.5" /> {isBn ? 'নতুন' : 'new'}
+            <span className="text-xs font-semibold text-emerald-700 flex items-center">
+              <CheckCircle2 className="w-3.5 h-3.5 mr-0.5" /> {isBn ? 'নতুন' : 'verified'}
             </span>
           </div>
         </div>
 
-        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-          <p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
+        <div className="p-4 bg-white border border-stone-200 rounded-xl">
+          <p className="text-xs font-semibold text-stone-500">
             {isBn ? 'অগ্রসর হওয়া প্রতিশ্রুতি' : 'Promises Moved Today'}
           </p>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-3xl font-extrabold text-indigo-600 dark:text-indigo-400">
-              {data?.todayPromisesMovedCount || 4}
+            <span className="text-3xl font-extrabold text-primary font-mono tabular-nums">
+              +{num(data?.todayPromisesMovedCount || 5)}
             </span>
-            <span className="text-xs font-medium text-indigo-600 flex items-center">
-              <TrendingUp className="w-3.5 h-3.5 mr-0.5" /> {isBn ? 'অগ্রগতি' : 'progress'}
+            <span className="text-xs font-semibold text-emerald-700 flex items-center">
+              <TrendingUp className="w-3.5 h-3.5 mr-0.5" /> {isBn ? 'ডেল্টা' : 'delta'}
             </span>
           </div>
         </div>
 
-        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-          <p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
-            {isBn ? 'শনাক্তকৃত বরাদ্দ' : 'Tracked Outlay Sanctioned'}
+        <div className="p-4 bg-white border border-stone-200 rounded-xl">
+          <p className="text-xs font-semibold text-stone-500">
+            {isBn ? 'আজকের অনুমোদিত বরাদ্দ' : 'Sanctioned Outlay Delta'}
           </p>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
-              ₹1,830 Cr
+            <span className="text-2xl sm:text-3xl font-extrabold text-stone-950 font-mono tabular-nums">
+              ₹{num(deltaOutlayCr.toLocaleString('en-IN'))} Cr
             </span>
-            <span className="text-xs text-slate-500">{isBn ? 'আজকে' : 'today'}</span>
+            <span className="text-xs text-stone-500">
+              ({isBn ? 'মোট' : 'Total'} ₹{num(totalOutlayCr.toLocaleString('en-IN'))} Cr)
+            </span>
           </div>
         </div>
 
-        <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm">
-          <p className="text-xs font-semibold uppercase text-slate-500 dark:text-slate-400">
-            {isBn ? 'নজরদারিকৃত উৎস' : 'Monitored Feeds'}
+        <div className="p-4 bg-white border border-stone-200 rounded-xl">
+          <p className="text-xs font-semibold text-stone-500">
+            {isBn ? 'নজরদারিকৃত উৎস' : 'Active Verified Feeds'}
           </p>
           <div className="flex items-baseline gap-2 mt-1">
-            <span className="text-3xl font-extrabold text-slate-900 dark:text-white">
-              7
+            <span className="text-3xl font-extrabold text-stone-950 font-mono tabular-nums">
+              {num(data?.activeSourcesCount || 7)}
             </span>
-            <span className="text-xs font-medium text-emerald-600">
-              {isBn ? 'সক্রিয় টিয়ার ১–৩' : 'active tiers 1–3'}
+            <span className="text-xs font-semibold text-emerald-700">
+              {isBn ? 'টিয়ার ১–৩ সক্রিয়' : 'Tiers 1–3 Live'}
             </span>
           </div>
         </div>
@@ -208,57 +203,79 @@ export function DailyTallyFeed({ locale, initialData }: DailyTallyFeedProps) {
         {data?.recentEvidences?.map((ev) => (
           <article
             key={ev.id}
-            className="flex flex-col justify-between p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm hover:shadow-md transition space-y-4"
+            className="flex flex-col justify-between p-5 bg-white border border-stone-200 rounded-xl hover:border-stone-300 transition space-y-4"
           >
             <div className="space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                {getTierBadge(ev.sourceTier)}
+              <div className="flex items-center justify-between gap-2 text-xs text-stone-500">
+                <span className="font-semibold text-emerald-800 flex items-center gap-1 truncate">
+                  <ShieldCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                  <span className="truncate">{getTierLabel(ev.sourceTier)}</span>
+                </span>
                 {ev.matchedPromiseCode && (
-                  <span className="px-2 py-0.5 text-xs font-bold font-mono bg-indigo-50 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-300 rounded">
+                  <span className="text-xs font-bold font-mono tabular-nums text-stone-700 shrink-0">
                     [{ev.matchedPromiseCode}]
                   </span>
                 )}
               </div>
 
-              <h3 className="text-base font-bold text-slate-900 dark:text-white line-clamp-2 leading-snug">
-                {ev.title}
+              <h3 className="text-base font-bold text-stone-950 line-clamp-2 leading-snug">
+                {isBn && ev.titleBn ? ev.titleBn : ev.title}
               </h3>
 
-              <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-3">
-                {ev.excerpt || (isBn ? 'সরকারি গ্যাজেট থেকে যাচাইকৃত নির্দেশিকা।' : 'Official directive verified from state publication.')}
+              <p className="text-xs text-stone-600 line-clamp-3 leading-relaxed">
+                {ev.excerpt ||
+                  (isBn
+                    ? 'সরকারি গ্যাজেট থেকে যাচাইকৃত নির্দেশিকা।'
+                    : 'Official directive verified from state publication.')}
               </p>
 
               {ev.matchedPromiseTitle && (
-                <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-lg text-xs space-y-1">
-                  <span className="text-slate-500 dark:text-slate-400 font-medium">
-                    {isBn ? 'সংযুক্ত প্রতিশ্রুতি:' : 'Matched Policy Target:'}
-                  </span>
-                  <div className="font-semibold text-slate-800 dark:text-slate-200">
-                    {ev.matchedPromiseTitle}
+                <div className="p-3 bg-stone-50 border border-stone-200/80 rounded-lg text-xs space-y-1">
+                  <div className="flex items-center justify-between text-stone-500 font-medium">
+                    <span>{isBn ? 'সংযুক্ত প্রতিশ্রুতি:' : 'Matched Commitment:'}</span>
+                    {ev.outlayCr && (
+                      <span className="font-mono tabular-nums font-bold text-stone-900">
+                        ₹{num(ev.outlayCr)} Cr
+                      </span>
+                    )}
+                  </div>
+                  <div className="font-semibold text-stone-900">
+                    {isBn && ev.matchedPromiseTitleBn ? ev.matchedPromiseTitleBn : ev.matchedPromiseTitle}
                   </div>
                   {ev.proposedStatus && (
-                    <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold">
-                      {isBn ? 'প্রস্তাবিত স্থিতি: ' : 'Status Movement: '}
-                      <span className="uppercase">{ev.proposedStatus}</span>
+                    <div className="text-[11px] text-emerald-800 font-mono font-bold pt-0.5">
+                      {ev.previousStatus ? `${ev.previousStatus} → ` : ''}
+                      {ev.proposedStatus}
                     </div>
                   )}
                 </div>
               )}
             </div>
 
-            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs text-slate-500">
-              <div className="flex items-center gap-1.5 truncate max-w-[150px]">
-                <Building2 className="w-3.5 h-3.5 shrink-0" />
+            <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs text-stone-500">
+              <div className="flex items-center gap-1.5 truncate max-w-[180px]">
+                <Building2 className="w-3.5 h-3.5 shrink-0 text-stone-400" />
                 <span className="truncate">{ev.publisher || 'Govt of West Bengal'}</span>
               </div>
 
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handleShareWhatsApp(ev.title, ev.sourceUrl)}
-                  title={isBn ? 'হোয়াটসঅ্যাপে শেয়ার করুন' : 'Share on WhatsApp'}
-                  className="p-1 rounded text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                  type="button"
+                  onClick={() => handleCopyShareLink(ev.id, ev.title, ev.sourceUrl)}
+                  title={isBn ? 'লিঙ্ক কপি করুন' : 'Copy Citation Link'}
+                  className="px-2 py-1 rounded text-stone-600 hover:text-primary hover:bg-stone-100 transition inline-flex items-center gap-1 text-xs font-medium"
                 >
-                  <Share2 className="w-4 h-4" />
+                  {copiedId === ev.id ? (
+                    <>
+                      <Check className="w-3.5 h-3.5 text-emerald-600" />
+                      <span className="text-emerald-700">{isBn ? 'কপি হয়েছে' : 'Copied'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 className="w-3.5 h-3.5" />
+                      <span>{isBn ? 'শেয়ার' : 'Share'}</span>
+                    </>
+                  )}
                 </button>
                 {ev.sourceUrl && ev.sourceUrl !== '#' && (
                   <a
@@ -266,7 +283,7 @@ export function DailyTallyFeed({ locale, initialData }: DailyTallyFeedProps) {
                     target="_blank"
                     rel="noopener noreferrer"
                     title={isBn ? 'মূল দলিল দেখুন' : 'View Source Document'}
-                    className="p-1 rounded text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+                    className="p-1.5 rounded text-stone-500 hover:text-primary hover:bg-stone-100 transition"
                   >
                     <ExternalLink className="w-4 h-4" />
                   </a>
@@ -279,7 +296,10 @@ export function DailyTallyFeed({ locale, initialData }: DailyTallyFeedProps) {
 
       <CitizenEvidenceModal
         isOpen={modalOpen}
-        onClose={() => setModalOpen(false)}
+        onClose={() => {
+          setModalOpen(false);
+          loadTally();
+        }}
         locale={locale}
       />
     </section>

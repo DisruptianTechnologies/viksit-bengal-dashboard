@@ -36,9 +36,12 @@ export default async function LocaleLayout({
   const skipText = locale === 'bn' ? 'মূল বিষয়বস্তুতে যান' : 'Skip to content';
 
   return (
-    <html lang={locale}>
-      <body className="bg-lightBg text-ink flex flex-col min-h-screen antialiased">
-        <NextIntlClientProvider messages={messages}>
+    <html lang={locale} suppressHydrationWarning>
+      <body
+        suppressHydrationWarning
+        className="bg-lightBg text-ink flex flex-col min-h-screen antialiased"
+      >
+        <NextIntlClientProvider locale={locale} messages={messages}>
           {/* High-visibility skip-to-content navigation link for keyboard accessibility */}
           <a
             href="#main-content"

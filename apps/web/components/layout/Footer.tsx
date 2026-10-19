@@ -15,13 +15,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Column 1: Platform Overview */}
           <div className="md:col-span-2 space-y-3">
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-lg text-white">
-                {t("brand")}
-              </span>
-              <span className="text-xs px-2 py-0.5 rounded bg-emerald-900 text-emerald-200 font-semibold border border-emerald-700">
-                WCAG 2.2 AA
-              </span>
+            <div className="font-extrabold text-lg text-white">
+              {t("brand")}
             </div>
             <p className="text-sm text-stone-300 max-w-md leading-relaxed">
               {locale === "bn"
@@ -85,18 +80,9 @@ export default function Footer() {
               {locale === "bn" ? "প্রবেশযোগ্যতা ও মান" : "Standards"}
             </h4>
             <ul className="space-y-2 text-sm text-stone-300">
-              <li className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" aria-hidden="true" />
-                <span>WCAG 2.2 AA Compliant</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" aria-hidden="true" />
-                <span>Bilingual (English / বাংলা)</span>
-              </li>
-              <li className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 shrink-0" aria-hidden="true" />
-                <span>ARIA Landmarks & Keyboard Nav</span>
-              </li>
+              <li>WCAG 2.2 AA Compliant</li>
+              <li>Bilingual (English / বাংলা)</li>
+              <li>Live RSS &amp; Gemini Verified</li>
             </ul>
           </div>
         </div>

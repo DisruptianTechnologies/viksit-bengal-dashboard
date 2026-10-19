@@ -19,76 +19,61 @@ export default function Header() {
         <div className="flex-1 bg-[#0A5C36]" />
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 sm:h-20">
-          {/* Brand Logo and Title */}
-          <div className="flex items-center gap-3">
-            <Link
-              href={`/${locale}`}
-              className="flex items-center gap-2.5 rounded-lg py-1 px-2 transition-opacity hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 ring-offset-primary"
-              aria-label="Viksit Bengal Dashboard - Home"
-            >
-              <div
-                className="w-10 h-10 rounded-full bg-white text-primary flex items-center justify-center font-bold text-lg shadow-inner shrink-0"
-                aria-hidden="true"
-              >
-                VB
-              </div>
-              <div className="flex flex-col">
-                <span className="font-extrabold text-base sm:text-lg tracking-tight leading-tight text-white">
-                  {t("brand")}
-                </span>
-                <span className="text-[11px] sm:text-xs text-emerald-100 font-medium">
-                  {locale === "bn" ? "২০৩০ লক্ষ্যমাত্রা" : "Vision 2030 ($1T)"}
-                </span>
-              </div>
-            </Link>
-          </div>
+        <div className="flex items-center justify-between gap-8 h-16">
+          {/* Zone 1: Single-element Brand Wordmark */}
+          <Link
+            href={`/${locale}`}
+            className="font-extrabold text-lg tracking-tight text-white whitespace-nowrap shrink-0 transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 ring-offset-primary rounded px-1 py-1"
+            aria-label="Viksit Bengal Dashboard - Home"
+          >
+            {t("brand")}
+          </Link>
 
-          {/* Primary Navigation Landmark */}
+          {/* Zone 2: Primary Navigation Landmark (Single-Line Links) */}
           <nav
             aria-label="Main Navigation"
-            className="hidden md:flex items-center gap-1 lg:gap-2"
+            className="hidden md:flex items-center gap-6"
           >
             <Link
               href={`/${locale}`}
-              className="min-h-[44px] px-3 py-2 rounded-md text-sm font-medium text-white hover:bg-emerald-800 transition-colors flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 ring-offset-primary"
+              className="min-h-[44px] py-2 text-sm font-medium text-white hover:underline underline-offset-4 transition-colors flex items-center whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
             >
-              {locale === "bn" ? "হোম / ল্যান্ডিং" : "Home"}
+              {locale === "bn" ? "সারসংক্ষেপ" : "Overview"}
             </Link>
             <Link
               href={`/${locale}/dashboard`}
-              className="min-h-[44px] px-3 py-2 rounded-md text-sm font-medium text-white hover:bg-emerald-800 transition-colors flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 ring-offset-primary"
+              className="min-h-[44px] py-2 text-sm font-medium text-white hover:underline underline-offset-4 transition-colors flex items-center whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
             >
               {locale === "bn" ? "ড্যাশবোর্ড" : "Dashboard"}
             </Link>
             <Link
               href={`/${locale}/promises`}
-              className="min-h-[44px] px-3.5 py-2 rounded-md text-sm font-medium text-white hover:bg-emerald-800 transition-colors flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 ring-offset-primary"
+              className="min-h-[44px] py-2 text-sm font-medium text-white hover:underline underline-offset-4 transition-colors flex items-center whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
             >
               {t("promises")}
             </Link>
             <Link
               href={`/${locale}/districts`}
-              className="min-h-[44px] px-3.5 py-2 rounded-md text-sm font-medium text-white hover:bg-emerald-800 transition-colors flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 ring-offset-primary"
+              className="min-h-[44px] py-2 text-sm font-medium text-white hover:underline underline-offset-4 transition-colors flex items-center whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
             >
               {t("districts")}
             </Link>
             <Link
               href={`/${locale}/indicators`}
-              className="min-h-[44px] px-3.5 py-2 rounded-md text-sm font-medium text-white hover:bg-emerald-800 transition-colors flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 ring-offset-primary"
+              className="min-h-[44px] py-2 text-sm font-medium text-white hover:underline underline-offset-4 transition-colors flex items-center whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
             >
               {t("indicators")}
             </Link>
             <Link
               href={`/${locale}/admin`}
-              className="min-h-[44px] px-3.5 py-2 rounded-md text-sm font-medium text-emerald-100 hover:text-white hover:bg-emerald-800 transition-colors flex items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 ring-offset-primary"
+              className="min-h-[44px] py-2 text-sm font-medium text-emerald-100 hover:text-white hover:underline underline-offset-4 transition-colors flex items-center whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
             >
               {t("admin")}
             </Link>
           </nav>
 
-          {/* Action / Language Switcher */}
-          <div className="flex items-center gap-2">
+          {/* Zone 3: Language Switcher Action */}
+          <div className="flex items-center shrink-0">
             <LanguageSwitcher />
           </div>
         </div>

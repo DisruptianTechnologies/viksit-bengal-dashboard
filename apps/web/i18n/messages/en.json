@@ -159,8 +159,8 @@
     "exploreDashboard": "Explore Live Dashboard",
     "trackPromises": "Track 141 Promises",
     "districtIndex": "23-District Index",
-    "todayChanges": "Today's Verified Changes",
-    "todayChangesSubtitle": "Real-time daily scrapers reconcile official government gazettes, cabinet sanctions, and ministry orders.",
+    "todayChanges": "Today's Verified Policy Delta",
+    "todayChangesSubtitle": "Daily delta engine & live RSS scrapers reconcile official gazettes, PIB Kolkata releases, and cabinet sanctions against 141 promises.",
     "corePillarsTitle": "Strategic Governance Pillars",
     "corePillarsSubtitle": "Direct access to key accountability and economic modules across the platform",
     "pillar1Title": "GSDP Macroeconomic Trajectory",
@@ -170,7 +170,7 @@
     "pillar3Title": "23-District Delivery Index",
     "pillar3Desc": "Geographic map and ranking by implementation rate, population, and district contribution.",
     "pillar4Title": "Sonar Bondhu AI Assistant",
-    "pillar4Desc": "Bilingual factual AI powered by OpenRouter and RAG grounded in verified state gazettes.",
+    "pillar4Desc": "Bilingual factual AI grounded in verified state gazettes, PIB releases, and live RAG state.",
     "enterModule": "Open Module"
   }
 }
