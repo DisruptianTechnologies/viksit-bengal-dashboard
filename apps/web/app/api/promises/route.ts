@@ -114,3 +114,73 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: err.message || 'Failed to create promise' }, { status: 400 });
   }
 }
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const authHeader = req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ message: 'Unauthorized: JWT token required' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const code = (body.code || '').trim().toUpperCase();
+    const status = (body.status || '').trim().toUpperCase();
+    const outlayCr = Number(body.outlayCr) || 0;
+    const reason = (body.reason || `Status transitioned to ${status} via Administrative CMS Portal`).trim();
+
+    if (!code || !status) {
+      return NextResponse.json({ message: 'Both code and status are required' }, { status: 400 });
+    }
+
+    const store = getLiveStore();
+    const target = store.promises.find((p) => p.code?.toUpperCase() === code);
+    if (!target) {
+      return NextResponse.json({ message: `Promise ${code} not found` }, { status: 404 });
+    }
+
+    const previousStatus = target.status || 'ANNOUNCED';
+    target.status = status;
+    target.statusHistory = [
+      ...(target.statusHistory || []),
+      {
+        id: `hist-${Date.now()}`,
+        status,
+        reason,
+        timestamp: new Date().toISOString(),
+      },
+    ];
+
+    if (outlayCr > 0 || previousStatus !== status) {
+      store.evidences.unshift({
+        id: `ev-status-${Date.now()}`,
+        title: `CMS Lifecycle Update [${code}]: ${target.titleEn} → ${status}`,
+        titleBn: `সিএমএস স্ট্যাটাস আপডেট [${code}]: ${target.titleBn || target.titleEn} → ${status}`,
+        url: 'https://wb.gov.in/orders',
+        sourceUrl: 'https://wb.gov.in/orders',
+        publisher: 'State Governance CMS Audit Cell',
+        sourceType: 'GOVERNMENT_ORDER',
+        sourceTier: 'TIER_1',
+        extractedText: reason,
+        extractedTextBn: reason,
+        publishedAt: new Date().toISOString(),
+        matchedPromiseCode: code,
+        matchedPromiseTitle: target.titleEn,
+        matchedPromiseTitleBn: target.titleBn || target.titleEn,
+        previousStatus,
+        proposedStatus: status,
+        districtCode: target.districts?.[0]?.districtCode || 'KOL',
+        districtNameEn: 'Kolkata',
+        districtNameBn: 'কলকাতা',
+        outlayCr: outlayCr > 0 ? outlayCr : 280,
+        confidenceScore: 0.98,
+        reviewStatus: 'APPROVED',
+        isLiveWebFetched: false,
+      });
+    }
+
+    return NextResponse.json(target);
+  } catch (err: any) {
+    return NextResponse.json({ message: err.message || 'Failed to update promise status' }, { status: 400 });
+  }
+}
+

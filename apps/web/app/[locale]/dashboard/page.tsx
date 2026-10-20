@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { setRequestLocale } from 'next-intl/server';
 import DashboardClient from '@/components/dashboard/DashboardClient';
-import { getLiveStore } from '@/lib/live-store';
+import { getLiveStore, buildLiveAnalyticsSummary } from '@/lib/live-store';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,6 +13,7 @@ export default async function DashboardPage({
   setRequestLocale(locale);
 
   const store = getLiveStore();
+  const initialAnalytics = buildLiveAnalyticsSummary();
 
   return (
     <div className="min-h-screen bg-stone-50/60 pb-16">
@@ -21,7 +22,9 @@ export default async function DashboardPage({
         districts={store.districts}
         promises={store.promises}
         indicators={store.indicators}
+        initialAnalytics={initialAnalytics}
       />
     </div>
   );
 }
+

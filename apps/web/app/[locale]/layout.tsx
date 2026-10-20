@@ -5,14 +5,17 @@ import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, setRequestLocale } from 'next-intl/server';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import { SabaiFoundationModal } from '@/components/citizen/SabaiFoundationModal';
 import { locales, type Locale } from '@/i18n';
 
 export const metadata: Metadata = {
-  title: 'Viksit Bengal Dashboard',
-  description: 'West Bengal Governance, Policy Commitments, and $1 Trillion Economic Progress Tracker across 23 districts.',
+  title: 'Viksit Bengal 2047 Dashboard',
+  description:
+    'West Bengal Governance, Policy Commitments, and Two-Part Economic Progress Tracker ($1T by 2033 & $5T GSDP by 2047) across 23 districts.',
   openGraph: {
-    title: 'Viksit Bengal Dashboard',
-    description: 'West Bengal Governance, Policy Commitments, and $1 Trillion Economic Progress Tracker across 23 districts.',
+    title: 'Viksit Bengal 2047 Dashboard',
+    description:
+      'West Bengal Governance, Policy Commitments, and Two-Part Economic Progress Tracker ($1T by 2033 & $5T GSDP by 2047) across 23 districts.',
   },
 };
 
@@ -59,6 +62,7 @@ export default async function LocaleLayout({
             {children}
           </main>
           <Footer />
+          <SabaiFoundationModal locale={locale} enableGlobalTrigger={true} />
         </NextIntlClientProvider>
       </body>
     </html>

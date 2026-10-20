@@ -48,20 +48,20 @@ export function CitizenChatbot({ locale: initialLocale }: { locale: string }) {
           id: 'welcome',
           sender: 'bot',
           text: isBn
-            ? 'নমস্কার! আমি **সোনার বন্ধু**, বিকশিত বাংলা ড্যাশবোর্ডের অফিশিয়াল এআই নীতি সহকারী।\n\nপশ্চিমবঙ্গের নির্বাচনী প্রতিশ্রুতি, সরকারি গ্যাজেট, বাজেট বরাদ্দ এবং **\$১ ট্রিলিয়ন অর্থনীতির** রূপরেখা সম্পর্কে যেকোনো প্রশ্ন আমাকে করতে পারেন।'
-            : 'Welcome! I am **Sonar Bondhu**, the official policy intelligence assistant for the Viksit Bengal Dashboard.\n\nAsk me anything about West Bengal\'s public commitments, gazette orders, budgetary sanctions, or the **\$1 Trillion GSDP trajectory**.',
+            ? 'নমস্কার! আমি **সোনার বন্ধু**, বিকশিত বাংলা ২০৪৭ ড্যাশবোর্ডের অফিশিয়াল এআই নীতি সহকারী।\n\nপশ্চিমবঙ্গের নির্বাচনী প্রতিশ্রুতি, সরকারি গ্যাজেট, বাজেট বরাদ্দ এবং **২০৩৩ সালের ₹৮৫ লক্ষ কোটি ও ২০৪৭ সালের ₹৪২৫ লক্ষ কোটি জিএসডিপি** রূপরেখা সম্পর্কে যেকোনো প্রশ্ন আমাকে করতে পারেন।'
+            : "Welcome! I am **Sonar Bondhu**, the official policy intelligence assistant for the Viksit Bengal 2047 Dashboard.\n\nAsk me anything about West Bengal's public commitments, gazette orders, budgetary sanctions, or the **two-phase GSDP trajectory (₹85 Lakh Cr by 2033 & ₹425 Lakh Cr by 2047)**.",
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           suggestedFollowUps: isBn
             ? [
                 '১ কোটি চাকরির প্রতিশ্রুতির বর্তমান অগ্রগতি কী?',
                 'দার্জিলিং চা শিল্পের জন্য কী সরকারি আদেশ দেওয়া হয়েছে?',
-                '$১ ট্রিলিয়ন অর্থনীতির লক্ষ্যমাত্রা কীভাবে অর্জিত হবে?',
+                '২০৩৩ ও ২০৪৭ সালের জিএসডিপি (₹ লক্ষ কোটি) লক্ষ্যমাত্রা কীভাবে অর্জিত হবে?',
                 'আজকের সর্বশেষ যাচাইকৃত খতিয়ান দেখান',
               ]
             : [
                 'What is the progress on the 1 crore jobs promise?',
                 'Show tea industry updates in Darjeeling',
-                'How will the $1 Trillion economy goal be achieved?',
+                'How will the ₹85 Lakh Cr (2033) & ₹425 Lakh Cr (2047) GSDP goals be achieved?',
                 "What are today's verified governance updates?",
               ],
         },

@@ -21,11 +21,13 @@ import {
   TrendingUp,
   Radio,
   Building2,
+  HeartHandshake,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DailyTallyMetrics, ScrapedSourceDto, toBengaliNumerals } from '@viksit/shared';
 import { getDailyTally, getScraperSources, triggerScrapeRun } from '@/lib/api';
 import { CitizenEvidenceModal } from '@/components/citizen/CitizenEvidenceModal';
+import { openSabaiFoundationModal } from '@/components/citizen/SabaiFoundationModal';
 
 interface LandingHeroProps {
   locale: string;
@@ -151,6 +153,37 @@ export default function LandingView({
                 <p className="text-base sm:text-lg text-stone-700 max-w-2xl leading-relaxed">
                   {t('heroDescription')}
                 </p>
+
+                {/* Two-Part Economic Vision Callout (2033 & 2047) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div className="p-3.5 rounded-xl bg-white border border-stone-200/90 shadow-xs flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-primary">
+                        {isBn ? '১ম পর্যায় · লক্ষ্য ২০৩৩' : 'Part 1 · 2033 Horizon'}
+                      </div>
+                      <div className="text-lg sm:text-xl font-black font-mono tabular-nums text-stone-950 mt-0.5">
+                        $1 Trillion USD GSDP
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200 shrink-0">
+                      2033
+                    </span>
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-emerald-950 text-white border border-emerald-800 shadow-xs flex items-center justify-between gap-3">
+                    <div>
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-amber-300">
+                        {isBn ? '২য় পর্যায় · ভিশন ২০৪৭' : 'Part 2 · 2047 Centenary Vision'}
+                      </div>
+                      <div className="text-lg sm:text-xl font-black font-mono tabular-nums text-white mt-0.5">
+                        $5 Trillion USD GSDP
+                      </div>
+                    </div>
+                    <span className="text-xs font-mono font-bold text-stone-950 bg-amber-400 px-2.5 py-1 rounded-md shrink-0">
+                      2047
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* Action Bar */}
@@ -195,6 +228,20 @@ export default function LandingView({
                       : isBn
                         ? 'রিয়েল-টাইম তথ্য সিঙ্ক করুন'
                         : 'Fetch Real-Time Updates'}
+                  </span>
+                </Button>
+
+                <Button
+                  type="button"
+                  size="lg"
+                  onClick={openSabaiFoundationModal}
+                  className="bg-amber-400 hover:bg-amber-300 text-stone-950 font-black shadow-xs cursor-pointer min-h-[48px] px-5 whitespace-nowrap shrink-0"
+                >
+                  <HeartHandshake className="w-4 h-4 mr-2" aria-hidden="true" />
+                  <span>
+                    {isBn
+                      ? 'সাবাই ফাউন্ডেশন সদস্যপদ (₹৫০০+) · অনুদান'
+                      : 'Sabai Membership (₹500+) · Donate'}
                   </span>
                 </Button>
               </div>
@@ -265,7 +312,7 @@ export default function LandingView({
 
                   <div className="p-3.5 rounded-xl bg-stone-50/80 border border-stone-200/80">
                     <div className="text-[11px] font-medium text-stone-500">
-                      {isBn ? '$১ ট্রিলিয়ন গতিবেগ' : '$1T Trajectory Delta'}
+                      {isBn ? '$১T (২০৩৩) ও $৫T (২০৪৭) গতিবেগ' : '$1T (2033) & $5T (2047) Delta'}
                     </div>
                     <div className="mt-1 flex items-baseline justify-between">
                       <span className="text-2xl font-black text-emerald-800 font-mono tabular-nums">
@@ -339,11 +386,11 @@ export default function LandingView({
 
             <div className="bg-white p-5 rounded-xl border border-stone-200/90">
               <div className="text-xs font-medium text-stone-500">
-                {isBn ? 'জিএসডিপি লক্ষ্যমাত্রা (২০৩০–৩৩)' : 'GSDP Horizon (2030–33)'}
+                {isBn ? 'দ্বি-পর্যায় জিএসডিপি ভিশন (২০৩৩ ও ২০৪৭)' : 'Two-Phase GSDP Vision (2033 & 2047)'}
               </div>
               <div className="mt-1.5 flex items-baseline justify-between">
-                <span className="text-3xl font-black text-stone-950 font-mono tabular-nums">
-                  $210B → $1,000B
+                <span className="text-xl sm:text-2xl font-black text-stone-950 font-mono tabular-nums">
+                  $1T (’33) → $5T (’47)
                 </span>
                 <span className="text-xs text-stone-500">
                   {isBn ? '২৩ জেলা' : `${num(districtsCount)} Districts`}
@@ -798,7 +845,7 @@ export default function LandingView({
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 shrink-0 w-full sm:w-auto">
             <Button
               asChild
               size="lg"
@@ -808,6 +855,14 @@ export default function LandingView({
                 <span>{isBn ? 'ড্যাশবোর্ডে প্রবেশ করুন' : 'Launch Dashboard'}</span>
                 <ArrowRight className="w-4 h-4 ml-2" aria-hidden="true" />
               </Link>
+            </Button>
+            <Button
+              size="lg"
+              onClick={() => openSabaiFoundationModal('landing-footer-cta')}
+              className="bg-amber-400 hover:bg-amber-300 text-stone-950 font-black cursor-pointer min-h-[48px] whitespace-nowrap"
+            >
+              <HeartHandshake className="w-4 h-4 mr-2" aria-hidden="true" />
+              <span>{isBn ? 'সাবাই ফাউন্ডেশন সদস্যপদ (₹৫০০+)' : 'Sabai Foundation Membership (₹500+)'}</span>
             </Button>
             <Button
               asChild

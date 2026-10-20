@@ -5,6 +5,7 @@ import {
   ChatQueryRequest,
   ChatQueryResponse,
   CitizenEvidenceSubmissionDto,
+  LiveAnalyticsSummary,
 } from '@viksit/shared';
 
 // Supports NEXT_PUBLIC_API_URL (e.g. http://localhost:3001) or built-in Next.js /api routes on port 3000
@@ -39,6 +40,10 @@ export async function fetchApi<T>(path: string, options: RequestInit = {}): Prom
   return res.json();
 }
 
+export async function getLiveAnalytics(): Promise<LiveAnalyticsSummary> {
+  return fetchApi<LiveAnalyticsSummary>('/analytics');
+}
+
 export async function getDistricts() {
   return fetchApi<any[]>('/districts');
 }
@@ -58,6 +63,19 @@ export async function getPromiseByCode(code: string) {
   return promises.find((p) => p.code?.toUpperCase() === code.toUpperCase()) || null;
 }
 
+export async function updatePromiseLifecycle(
+  dto: { code: string; status: string; outlayCr?: number; reason?: string },
+  token: string
+) {
+  return fetchApi<any>('/promises', {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(dto),
+  });
+}
+
 export async function getIndicators() {
   return fetchApi<any[]>('/indicators');
 }
@@ -65,6 +83,18 @@ export async function getIndicators() {
 export async function getEvidence(query: Record<string, string> = {}) {
   const params = new URLSearchParams(query).toString();
   return fetchApi<any[]>(`/evidence${params ? `?${params}` : ''}`);
+}
+
+export async function reviewEvidenceItem(
+  id: string,
+  reviewStatus: 'APPROVED' | 'REJECTED',
+  token?: string
+) {
+  return fetchApi<any>('/evidence', {
+    method: 'PATCH',
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: JSON.stringify({ id, reviewStatus }),
+  });
 }
 
 export async function getDailyTally(): Promise<DailyTallyMetrics> {
@@ -105,3 +135,4 @@ export async function login(email: string, password: string) {
     body: JSON.stringify({ email, password }),
   });
 }
+

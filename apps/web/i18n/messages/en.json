@@ -1,16 +1,16 @@
 {
   "HomePage": {
     "title": "Viksit Bengal Dashboard",
-    "subtitle": "$1 Trillion Economy Vision 2030",
-    "targetCardTitle": "GSDP Growth Scenarios",
-    "targetCardDescription": "Targeting $1T GSDP by 2030 across ambitious and baseline economic trajectories",
+    "subtitle": "₹85 Lakh Cr (2033) & ₹425 Lakh Cr (2047) GSDP Vision",
+    "targetCardTitle": "Two-Phase GSDP Growth Trajectory (2033 & 2047)",
+    "targetCardDescription": "Part 1: ₹85 Lakh Crore by 2033 (1T Milestone) • Part 2: ₹425 Lakh Crore GSDP by 2047 (5T Vision)",
     "baselineScenario": "Baseline Scenario (8.2% CAGR)",
     "ambitiousScenario": "Ambitious Vision (12.5% CAGR)",
-    "currentGsdp": "Current GSDP ($210B)",
-    "targetGsdp": "Target GSDP ($1,000B)",
+    "currentGsdp": "Current GSDP (₹17.85 Lakh Cr)",
+    "targetGsdp": "Target GSDP: ₹85L Cr (2033) → ₹425L Cr (2047)",
     "requiredCagr": "Required Growth (CAGR)",
-    "targetCountdown": "Target Horizon",
-    "yearsRemaining": "Years Remaining to 2030",
+    "targetCountdown": "Two-Phase Horizon",
+    "yearsRemaining": "Milestones: 2033 & 2047",
     "viewDetails": "Explore Full Economic Breakdown"
   },
   "Navigation": {
@@ -25,7 +25,8 @@
     "logout": "Sign Out",
     "skipToContent": "Skip to content",
     "language": "Language",
-    "selectLanguage": "Select language"
+    "selectLanguage": "Select language",
+    "donate": "Sabai Membership"
   },
   "StatsBand": {
     "title": "Key Progress Metrics",
@@ -76,11 +77,11 @@
     "externalLink": "View Source Document"
   },
   "EconomicOverview": {
-    "title": "Macroeconomic Indicators",
-    "subtitle": "Tracking critical developmental indices driving West Bengal's economy",
+    "title": "Macroeconomic Indicators (INR)",
+    "subtitle": "Tracking critical developmental indices in Rupee terms driving West Bengal's 2033 & 2047 vision",
     "gsdpGrowth": "GSDP Growth Rate",
-    "perCapita": "Per Capita Income",
-    "fdi": "FDI & Capital Inflow",
+    "perCapita": "Per Capita Income (₹)",
+    "fdi": "FDI & Capital Inflow (₹ Cr)",
     "employment": "Workforce Participation",
     "manufacturing": "Industrial Output",
     "services": "Services Sector",
@@ -133,8 +134,8 @@
   },
   "CitizenChatbot": {
     "title": "Sonar Bondhu — Bengal Policy Assistant",
-    "subtitle": "Instant, fact-checked answers on promises, $1T goals & districts",
-    "placeholder": "Ask about promises, districts, $1T economy...",
+    "subtitle": "Instant, fact-checked answers on promises, 2033/2047 GSDP targets (₹) & districts",
+    "placeholder": "Ask about promises, districts, ₹85L Cr (2033) & ₹425L Cr (2047) GSDP...",
     "send": "Send",
     "suggestedQueries": "Suggested Queries",
     "citationsTitle": "Verified Sources & Citations",
@@ -152,10 +153,10 @@
     "gsdpShare": "GSDP Contribution"
   },
   "LandingPage": {
-    "heroBadge": "National Vision 2030 • Viksit Bengal",
+    "heroBadge": "National Vision 2047 • Viksit Bengal",
     "heroTitlePrefix": "Architecting Bengal's",
-    "heroTitleHighlight": "$1 Trillion Economy",
-    "heroDescription": "West Bengal's high-fidelity governance intelligence platform. Tracking 141 developmental commitments, real-time macroeconomic indicators, and daily verified policy actions across all 23 districts.",
+    "heroTitleHighlight": "$1T by 2033 & $5T GSDP by 2047",
+    "heroDescription": "West Bengal's two-phase governance & economic intelligence platform: targeting $1 Trillion USD GSDP by 2033 and $5 Trillion USD GSDP by 2047 across 141 policy commitments and 23 districts.",
     "exploreDashboard": "Explore Live Dashboard",
     "trackPromises": "Track 141 Promises",
     "districtIndex": "23-District Index",
@@ -163,8 +164,8 @@
     "todayChangesSubtitle": "Daily delta engine & live RSS scrapers reconcile official gazettes, PIB Kolkata releases, and cabinet sanctions against 141 promises.",
     "corePillarsTitle": "Strategic Governance Pillars",
     "corePillarsSubtitle": "Direct access to key accountability and economic modules across the platform",
-    "pillar1Title": "GSDP Macroeconomic Trajectory",
-    "pillar1Desc": "Scenario models targeting $1,000 Billion GSDP with CAG, RBI, and CSO baseline metrics.",
+    "pillar1Title": "2033 & 2047 GSDP Trajectory",
+    "pillar1Desc": "Two-part scenario models targeting $1 Trillion by 2033 and $5 Trillion GSDP by 2047.",
     "pillar2Title": "141 Sectoral Promises",
     "pillar2Desc": "Filterable database across Industry, Deep Seaport, Agriculture, Education & Power.",
     "pillar3Title": "23-District Delivery Index",

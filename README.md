@@ -1,75 +1,78 @@
-# Viksit Bengal Dashboard
+# Viksit Bengal Dashboard & $1 Trillion Economy Platform
 
-Turborepo monorepo for the **Viksit Bengal Dashboard & \$1 Trillion Economy Platform**.
+An open-governance, real-time econometric and policy accountability platform tracking **141 state policy commitments** across **15 developmental sectors** and **23 districts of West Bengal**, measuring live trajectory toward a **$1 Trillion USD GSDP** by 2033.
 
-> For comprehensive system architecture, API schemas, threat models, WCAG 2.2 AA audit results, and data pipelines, see [**`DOCUMENTATION.md`**](./DOCUMENTATION.md).
-
----
-
-## Workspace Structure
-
-- **`apps/web`**: Next.js 14 App Router frontend with `next-intl` (English & Bengali), accessible Radix UI primitives, Leaflet GIS district mapping, and Admin CMS.
-- **`apps/api`**: NestJS 10 backend REST API with JWT Auth, RBAC guards (`ADMIN`, `RESEARCHER`, `PUBLIC`), DTO input sanitization, and Prisma database integration.
-- **`packages/database`**: Prisma ORM schema targeting PostgreSQL, with migration scripts and seed dataset for 23 West Bengal districts, targets, categories, and users.
-- **`packages/shared`**: Shared TypeScript types, enums, constants, and Bengali numeral utilities (`০–৯`).
-- **`tests/`**: Master 4-tier E2E opaque-box test runner covering feature validation, boundary checks, pairwise workflows, and threat defense.
+> 📖 **Master Documentation:** For complete architecture diagrams, API schemas, developer extension guides, deployment tutorials, and the 2026–2033 roadmap, see [**`DOCUMENTATION.md`**](./DOCUMENTATION.md).
 
 ---
 
-## Quick Start
+## Key Highlights & Features
+
+- **Autonomous Daily Delta & Zero-Cost Live Verification:** Automatically computes daily changes (`Asia/Kolkata` timezone) across verified public feeds (**PIB Kolkata**, **West Bengal Extraordinary Gazette**, **CAG Audits**, **WBIDC**, **Tea Board**) + **Gemini (`@google/genai`) Search Grounding**—without requiring paid third-party scraping APIs.
+- **Real-Time Econometric & Visual Analytics Hub (`Recharts`):**
+  - **8-Card Live Executive Telemetry Strip** with 15-second live stream polling.
+  - **2024–2033 $1T GSDP Multi-Scenario `AreaChart`** (Conservative `$750B`, Base Case `$1,000B`, Ambitious `$1,250B`, and Live Policy Impulse).
+  - **Annual Infrastructure Capex vs. Nominal INR GSDP `ComposedChart`**.
+  - **15-Sector Sanctioned vs. Disbursed Outlay & Stacked Lifecycle `BarChart`** + complete 15-sector financial matrix table.
+  - **14-Day Rolling Verification Velocity & Source Tier `PieChart`**.
+  - **6-Zone & 23-District Spatial Econometric `RadarChart` + `ComposedChart`**.
+- **Admin & Researcher CMS Governance Portal (`/admin`):**
+  - Pre-authenticated instant access with one-click role switching (`ADMIN`, `RESEARCHER`, `JWT Login`).
+  - **Live Promise Lifecycle Manager:** Filter by keyword, sector, or status; transition any commitment (`Announced → In Progress → Delivered`) with one click and watch all charts recalculate immediately.
+  - **Promise vs. Results CSV Exporter:** Export the filtered promise dataset (`code`, `title`, `titleBn`, `status`, `sector`, `resultCompletionPct`, `verifiedEvidenceCount`, `sanctionedOutlayCr`, `latestResultMilestone`, `districtsCovered`, `responsibleDepartment`, `lastVerifiedDate`) as a UTF-8 BOM CSV report.
+  - **Evidence Audit Moderation Queue & Live Source Scraper Telemetry**.
+- **Bilingual (`English` & `বাংলা`) + WCAG 2.2 Level AA Compliant:** 100% translation parity, automatic Bengali numeral conversion (`০–৯`), interactive 23-district Choropleth GIS map with accessible table fallback, and the **Sonar Bondhu** bilingual AI policy assistant.
+
+---
+
+## Quick Start & Installation
 
 ### 1. Install Dependencies
 ```bash
 npm install
 ```
 
-### 2. Configure Environment
-Set up `.env` files in `apps/api` and `apps/web`:
+### 2. Configure Environment (Optional)
+Copy `.env.example` to `.env.local`. The platform runs out-of-the-box with zero paid API keys required; optionally add `GEMINI_API_KEY` to enable live Gemini web grounding:
 ```bash
-# apps/api/.env
-PORT=3001
-DATABASE_URL="postgresql://postgres:postgres@localhost:5432/viksit_bengal?schema=public"
-JWT_SECRET="viksit-bengal-super-secret-jwt-key-2026"
-
-# apps/web/.env.local
-NEXT_PUBLIC_API_URL="http://localhost:3001"
-NEXTAUTH_SECRET="viksit-bengal-nextauth-secret-key"
-NEXTAUTH_URL="http://localhost:3000"
+cp .env.example .env.local
 ```
 
-### 3. Database Migration & Seed
-```bash
-npx prisma db push --schema=./packages/database/prisma/schema.prisma
-npx prisma db seed --schema=./packages/database/prisma/schema.prisma
-```
-
-### 4. Run Development Servers
+### 3. Run Development Server (Port 3000)
 ```bash
 npm run dev
 ```
-- Web: `http://localhost:3000`
-- API: `http://localhost:3001`
+- **Landing Page & Daily Delta:** `http://localhost:3000/en` (or `/bn`)
+- **Executive Analytics Dashboard:** `http://localhost:3000/en/dashboard`
+- **CMS Governance Portal & CSV Export:** `http://localhost:3000/en/admin`
+- **141 Commitments Explorer:** `http://localhost:3000/en/promises`
+- **23-District GIS Map & Leaderboard:** `http://localhost:3000/en/districts`
+- **$1T Economic Indicators:** `http://localhost:3000/en/indicators`
 
 ---
 
-## Testing & Verification
+## Core API Endpoints (Port 3000)
+
+- `GET /api/analytics` — Live econometric KPIs, 2024–2033 GSDP series, 15-sector outlays, 14-day velocity, and 6-zone matrices.
+- `GET /api/scraper/daily-tally` — Daily Delta ledger (`+Δ` new evidence, `+Δ` promises moved, `+₹ Cr` outlay delta) and recent verified citations.
+- `POST /api/scraper/run` — Triggers live multi-source RSS + Gemini verification sync.
+- `GET / POST / PATCH /api/promises` — Query, register, or transition lifecycle stages of the 141 policy commitments.
+- `GET / POST / PATCH /api/evidence` — Query, submit, or moderate Tier 1–3 audit evidence items.
+- `POST /api/scraper/citizen-evidence` — Public citizen ground evidence submission.
+- `POST /api/chat/query` — Bilingual *Sonar Bondhu* AI policy assistant.
+- `POST /api/auth/login` — JWT authentication (`admin@viksitbengal.gov.in` / `Admin@123`).
+
+---
+
+## Verification & Automated Tests
 
 ```bash
-# Standalone WCAG 2.2 AA Accessibility Test Suite (136 tests)
+# TypeScript Type Check
+npm run lint
+
+# WCAG 2.2 AA Accessibility & Bilingual Parity Suite (188 checks)
 node apps/web/__tests__/wcag-accessibility.test.mjs
 
-# Master 4-Tier E2E Test Suite
+# Master 4-Tier E2E Test Suite (117 checks)
 npm run test:e2e
 ```
-
----
-
-## Production Deployment (cPanel & Hostinger hPanel)
-
-Detailed production deployment guides for:
-- **cPanel (CloudLinux Setup Node.js App, Phusion Passenger, Apache `.htaccess` Reverse Proxy)**
-- **Hostinger hPanel (Shared/Cloud Node.js Manager & Hostinger VPS with PM2, Nginx, PostgreSQL, and Let's Encrypt SSL)**
-
-Refer to [**`DOCUMENTATION.md` Section 11**](./DOCUMENTATION.md#11-production-deployment-guide-cpanel--hostinger-hpanel).
-
-

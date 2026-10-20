@@ -1,7 +1,11 @@
+'use client';
+
 import * as React from "react";
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
+import { HeartHandshake } from "lucide-react";
 import LanguageSwitcher from "./LanguageSwitcher";
+import { openSabaiFoundationModal } from "@/components/citizen/SabaiFoundationModal";
 
 export default function Header() {
   const t = useTranslations("Navigation");
@@ -72,8 +76,18 @@ export default function Header() {
             </Link>
           </nav>
 
-          {/* Zone 3: Language Switcher Action */}
-          <div className="flex items-center shrink-0">
+          {/* Zone 3: Sabai Foundation Membership Trigger & Language Switcher */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <button
+              type="button"
+              onClick={openSabaiFoundationModal}
+              className="min-h-[40px] px-3 py-1.5 rounded-lg bg-amber-400 hover:bg-amber-300 text-stone-950 font-extrabold text-xs inline-flex items-center gap-1.5 transition-colors whitespace-nowrap shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white cursor-pointer"
+            >
+              <HeartHandshake className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
+              <span>
+                {locale === "bn" ? "অনুদান ও সদস্যপদ" : "Donate · Membership"}
+              </span>
+            </button>
             <LanguageSwitcher />
           </div>
         </div>

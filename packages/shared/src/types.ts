@@ -131,3 +131,158 @@ export interface CitizenEvidenceSubmissionDto {
   districtCode?: string;
   submitterEmail?: string;
 }
+
+export interface GsdpTrajectoryPoint {
+  year: string;
+  conservativeUsdB: number;
+  baseCaseUsdB: number;
+  ambitiousUsdB: number;
+  liveImpulseUsdB: number;
+  conservativeInrLakhCr: number;
+  baseCaseInrLakhCr: number;
+  ambitiousInrLakhCr: number;
+  liveImpulseInrLakhCr: number;
+  capexOutlayCr: number;
+}
+
+export interface SabaiMembershipSubmissionDto {
+  fullName: string;
+  email: string;
+  phone: string;
+  districtCode?: string;
+  amountInr: number;
+  utrNumber?: string;
+  notes?: string;
+}
+
+export interface SectorAnalyticItem {
+  code: string;
+  nameEn: string;
+  nameBn: string;
+  shortEn: string;
+  shortBn: string;
+  total: number;
+  delivered: number;
+  inProgress: number;
+  budgeted: number;
+  announced: number;
+  notStarted: number;
+  executionRate: number;
+  sanctionedOutlayCr: number;
+  disbursedOutlayCr: number;
+  utilizationRate: number;
+  jobsProjectedLakhs: number;
+}
+
+export interface DailyIngestionPoint {
+  dateKey: string;
+  dateLabel: string;
+  verifiedReleases: number;
+  promisesMoved: number;
+  outlaySanctionedCr: number;
+  cumulativeOutlayCr: number;
+  avgConfidencePct: number;
+}
+
+export interface RegionalZoneAnalytic {
+  zone: string;
+  zoneBn: string;
+  districtsCount: number;
+  populationM: number;
+  gsdpSharePct: number;
+  avgDeliveryScore: number;
+  activePromises: number;
+  deliveredPromises: number;
+  sanctionedOutlayCr: number;
+  perCapitaInr: number;
+}
+
+export interface LiveAnalyticsSummary {
+  timestamp: string;
+  lastSyncedAt: string;
+  liveSyncMode: string;
+  overview: {
+    totalPromises: number;
+    deliveredCount: number;
+    underImplementationCount: number;
+    budgetedCount: number;
+    announcedCount: number;
+    notStartedCount: number;
+    stalledCount: number;
+    deliveryCompletionRate: number;
+    activeExecutionRate: number;
+    weightedProgressScore: number;
+    totalEvidences: number;
+    approvedEvidences: number;
+    pendingEvidences: number;
+    rejectedEvidences: number;
+    avgConfidenceScorePct: number;
+    totalTrackedOutlayCr: number;
+    totalDisbursedOutlayCr: number;
+    outlayUtilizationPct: number;
+    todayOutlayDeltaCr: number;
+    currentGsdpUsdB: number;
+    currentGsdpInrLakhCr: number;
+    targetGsdpUsdB: number;
+    targetGsdp2047UsdB: number;
+    targetGsdp2033InrLakhCr: number;
+    targetGsdp2047InrLakhCr: number;
+    gsdpProgressPct: number;
+    gsdp2047ProgressPct: number;
+    requiredCagrBasePct: number;
+    currentRealizedCagrPct: number;
+    perCapitaInr: number;
+    targetPerCapitaInr: number;
+    targetPerCapita2047Inr: number;
+    projectedJobsLakhs: number;
+    activeSourcesCount: number;
+    totalScrapeRuns: number;
+    districtsCovered: number;
+    avgDistrictDeliveryScore: number;
+  };
+  gsdpTrajectorySeries: GsdpTrajectoryPoint[];
+  sectorAnalytics: SectorAnalyticItem[];
+  dailyIngestionSeries: DailyIngestionPoint[];
+  evidenceTierBreakdown: {
+    byTier: Array<{
+      tier: string;
+      labelEn: string;
+      labelBn: string;
+      count: number;
+      outlayCr: number;
+      avgConfidencePct: number;
+      sharePct: number;
+    }>;
+    byType: Array<{
+      type: string;
+      labelEn: string;
+      labelBn: string;
+      count: number;
+      outlayCr: number;
+    }>;
+    byStatus: Array<{
+      status: string;
+      labelEn: string;
+      labelBn: string;
+      count: number;
+      sharePct: number;
+    }>;
+  };
+  regionalZoneAnalytics: RegionalZoneAnalytic[];
+  districtMatrix: Array<{
+    code: string;
+    nameEn: string;
+    nameBn: string;
+    zone: string;
+    populationM: number;
+    gsdpSharePct: number;
+    deliveryScore: number;
+    promiseCount: number;
+    deliveredCount: number;
+    inProgressCount: number;
+    outlayCr: number;
+    perCapitaInr: number;
+  }>;
+}
+
+

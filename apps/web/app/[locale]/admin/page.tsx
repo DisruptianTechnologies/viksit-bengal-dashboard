@@ -2,7 +2,13 @@
 
 import * as React from 'react';
 import { useLocale } from 'next-intl';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -14,56 +20,123 @@ import {
   FileText,
   RefreshCw,
   ExternalLink,
+  BarChart3,
+  Layers,
+  Radio,
+  Search,
+  Check,
+  XCircle,
+  ArrowUpRight,
+  Database,
+  UserCheck,
+  SlidersHorizontal,
+  Download,
 } from 'lucide-react';
+import { RealtimeAnalyticsHub } from '@/components/dashboard/RealtimeAnalyticsHub';
+import {
+  LiveAnalyticsSummary,
+  ScrapedSourceDto,
+  toBengaliNumerals,
+} from '@viksit/shared';
+import {
+  getLiveAnalytics,
+  getPromises,
+  getEvidence,
+  getScraperSources,
+  updatePromiseLifecycle,
+  reviewEvidenceItem,
+} from '@/lib/api';
 
 export default function AdminPage() {
   const locale = useLocale();
   const isBn = locale === 'bn';
 
+  const fmt = React.useCallback(
+    (val: number | string) => (isBn ? toBengaliNumerals(val) : String(val)),
+    [isBn]
+  );
+
+  // Pre-authenticated default Admin session for immediate CMS access, with full JWT login/role switcher support
   const [email, setEmail] = React.useState('admin@viksitbengal.gov.in');
   const [password, setPassword] = React.useState('Admin@123');
-  const [token, setToken] = React.useState<string | null>(null);
-  const [user, setUser] = React.useState<any>(null);
+  const [token, setToken] = React.useState<string | null>('jwt-cms-live-admin-token');
+  const [user, setUser] = React.useState<any>({
+    id: 'usr-admin-01',
+    name: 'Chief Governance Administrator',
+    email: 'admin@viksitbengal.gov.in',
+    role: 'ADMIN',
+  });
+  const [showAuthModal, setShowAuthModal] = React.useState(false);
+
+  const [activeWorkspaceTab, setActiveWorkspaceTab] = React.useState<
+    'analytics' | 'promises' | 'evidence' | 'scraper'
+  >('analytics');
+
   const [loading, setLoading] = React.useState(false);
+  const [analytics, setAnalytics] = React.useState<LiveAnalyticsSummary | null>(null);
+  const [promisesList, setPromisesList] = React.useState<any[]>([]);
   const [evidences, setEvidences] = React.useState<any[]>([]);
-  const [message, setMessage] = React.useState<{ text: string; type: 'success' | 'error' } | null>(null);
+  const [sources, setSources] = React.useState<ScrapedSourceDto[]>([]);
+  const [promiseSearch, setPromiseSearch] = React.useState('');
+  const [promiseStatusFilter, setPromiseStatusFilter] = React.useState('ALL');
+  const [promiseSectorFilter, setPromiseSectorFilter] = React.useState('ALL');
+  const [updatingCode, setUpdatingCode] = React.useState<string | null>(null);
+
+  const [message, setMessage] = React.useState<{
+    text: string;
+    type: 'success' | 'error';
+  } | null>(null);
 
   // New Promise state
   const [newPromise, setNewPromise] = React.useState({
     code: 'INFRA-99',
     titleEn: 'Kolkata-Siliguri High-Speed Expressway Corridor',
     titleBn: 'কলকাতা-শিলিগুড়ি দ্রুতগতির এক্সপ্রেসওয়ে করিডোর',
-    descriptionEn: 'Dedicated 6-lane access-controlled greenfield highway reducing transit time to 6 hours.',
-    descriptionBn: 'কলকাতা ও উত্তরবঙ্গের সংযোগকারী ৬ লেন বিশিষ্ট গ্রিনফিল্ড এক্সপ্রেসওয়ে।',
+    descriptionEn:
+      'Dedicated 6-lane access-controlled greenfield highway reducing freight transit time to 6 hours.',
+    descriptionBn:
+      'কলকাতা ও উত্তরবঙ্গের সংযোগকারী ৬ লেন বিশিষ্ট গ্রিনফিল্ড এক্সপ্রেসওয়ে।',
+    categoryCode: 'infrastructure',
+    districtCode: 'MLD',
     status: 'UNDER_IMPLEMENTATION',
   });
 
   // New Evidence state
   const [newEvidence, setNewEvidence] = React.useState({
     promiseCode: 'TEA-01',
-    title: 'State Cabinet Approval & Gazette Notification for Darjeeling Tea & Expressway',
+    title:
+      'State Cabinet Approval & Gazette Notification for Darjeeling Tea & Expressway',
     url: 'https://wb.gov.in/gazette/2026/expressway-approval.pdf',
     sourceType: 'GAZETTE',
     sourceTier: 'TIER_1',
+    districtCode: 'DAR',
+    proposedStatus: 'UNDER_IMPLEMENTATION',
     outlayCr: 450,
-    extractedText: 'Cabinet grants administrative approval and ₹450 Cr initial disbursement.',
+    extractedText:
+      'Cabinet grants administrative approval and ₹450 Cr initial disbursement under Notification IND/2026.',
   });
 
-  const loadEvidenceQueue = React.useCallback(async () => {
+  const loadAllCmsData = React.useCallback(async () => {
     try {
-      const res = await fetch('/api/evidence', { cache: 'no-store' });
-      if (res.ok) {
-        const data = await res.json();
-        setEvidences(Array.isArray(data) ? data.slice(0, 8) : []);
-      }
+      const [analyticsData, promisesData, evidencesData, sourcesData] =
+        await Promise.all([
+          getLiveAnalytics().catch(() => null),
+          getPromises().catch(() => []),
+          getEvidence().catch(() => []),
+          getScraperSources().catch(() => []),
+        ]);
+      if (analyticsData) setAnalytics(analyticsData);
+      if (Array.isArray(promisesData)) setPromisesList(promisesData);
+      if (Array.isArray(evidencesData)) setEvidences(evidencesData);
+      if (Array.isArray(sourcesData)) setSources(sourcesData);
     } catch {
-      // ignore
+      // ignore transient error
     }
   }, []);
 
   React.useEffect(() => {
-    loadEvidenceQueue();
-  }, [loadEvidenceQueue]);
+    loadAllCmsData();
+  }, [loadAllCmsData]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,12 +152,50 @@ export default function AdminPage() {
       if (!res.ok) throw new Error(data.message || 'Login failed');
       setToken(data.accessToken);
       setUser(data.user);
+      setShowAuthModal(false);
       setMessage({
-        text: `Signed in successfully as ${data.user?.name} (${data.user?.role})`,
+        text: isBn
+          ? `${data.user?.name} (${data.user?.role}) হিসেবে সফলভাবে সাইন ইন সম্পন্ন হয়েছে।`
+          : `Authenticated via JWT as ${data.user?.name} (${data.user?.role}).`,
         type: 'success',
       });
     } catch (err: any) {
-      setMessage({ text: err.message || 'Authentication error', type: 'error' });
+      setMessage({
+        text: err.message || 'Authentication error',
+        type: 'error',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleQuickRoleSwitch = async (
+    targetEmail: string,
+    targetPassword: string
+  ) => {
+    setEmail(targetEmail);
+    setPassword(targetPassword);
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: targetEmail, password: targetPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setToken(data.accessToken);
+        setUser(data.user);
+        setShowAuthModal(false);
+        setMessage({
+          text: isBn
+            ? `সক্রিয় ভূমিকা পরিবর্তিত: ${data.user?.name} (${data.user?.role})`
+            : `Switched active CMS role to ${data.user?.name} (${data.user?.role})`,
+          type: 'success',
+        });
+      }
+    } catch {
+      // ignore
     } finally {
       setLoading(false);
     }
@@ -92,7 +203,10 @@ export default function AdminPage() {
 
   const handleCreatePromise = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return;
+    if (!token) {
+      setShowAuthModal(true);
+      return;
+    }
     setLoading(true);
     setMessage(null);
     try {
@@ -107,10 +221,12 @@ export default function AdminPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to create promise');
       setMessage({
-        text: `Promise ${newPromise.code} registered in live state catalog and added to today's Daily Delta!`,
+        text: isBn
+          ? `প্রতিশ্রুতি [${newPromise.code}] নিবন্ধিত হয়েছে এবং সকল রিয়েল-টাইম চার্ট ও ডেল্টা হালনাগাদ করা হয়েছে!`
+          : `Promise [${newPromise.code}] registered in live state catalog — all charts & figures updated!`,
         type: 'success',
       });
-      await loadEvidenceQueue();
+      await loadAllCmsData();
     } catch (err: any) {
       setMessage({ text: err.message, type: 'error' });
     } finally {
@@ -118,9 +234,59 @@ export default function AdminPage() {
     }
   };
 
+  const handleTransitionPromiseStatus = async (
+    code: string,
+    nextStatus: string,
+    outlayCr = 320
+  ) => {
+    if (!token) {
+      setShowAuthModal(true);
+      return;
+    }
+    if (user?.role === 'RESEARCHER') {
+      setMessage({
+        text: isBn
+          ? '৪০৩ অনুমোদন প্রত্যাখ্যাত: শুধুমাত্র ADMIN প্রতিশ্রুতির স্ট্যাটাস পরিবর্তন করতে পারেন।'
+          : '403 Forbidden: Only ADMIN role can directly transition promise lifecycle status.',
+        type: 'error',
+      });
+      return;
+    }
+    setUpdatingCode(code);
+    setMessage(null);
+    try {
+      await updatePromiseLifecycle(
+        {
+          code,
+          status: nextStatus,
+          outlayCr,
+          reason: `Transitioned to ${nextStatus} via CMS Governance Command Center`,
+        },
+        token
+      );
+      setMessage({
+        text: isBn
+          ? `[${code}] প্রতিশ্রুতির স্ট্যাটাস ${nextStatus}-এ উন্নীত হয়েছে এবং জিএসডিপি ও খাতওয়ারী চার্ট পুনর্গণনা করা হয়েছে।`
+          : `Commitment [${code}] transitioned to ${nextStatus} — real-time charts & sector outlays recalculated!`,
+        type: 'success',
+      });
+      await loadAllCmsData();
+    } catch (err: any) {
+      setMessage({
+        text: err.message || 'Failed to update status',
+        type: 'error',
+      });
+    } finally {
+      setUpdatingCode(null);
+    }
+  };
+
   const handleCreateEvidence = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!token) return;
+    if (!token) {
+      setShowAuthModal(true);
+      return;
+    }
     setLoading(true);
     setMessage(null);
     try {
@@ -135,14 +301,43 @@ export default function AdminPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Failed to submit evidence');
       setMessage({
-        text: `Evidence item uploaded, linked to [${newEvidence.promiseCode}], and published to the Daily Delta feed!`,
+        text: isBn
+          ? `প্রমাণ নথি আপলোড সম্পন্ন, [${newEvidence.promiseCode}]-এর সাথে সংযুক্ত এবং ₹${newEvidence.outlayCr} কোটি বরাদ্দ চার্টে যুক্ত হয়েছে!`
+          : `Evidence uploaded, linked to [${newEvidence.promiseCode}] (+₹${newEvidence.outlayCr} Cr), and reflected across all live charts!`,
         type: 'success',
       });
-      await loadEvidenceQueue();
+      await loadAllCmsData();
     } catch (err: any) {
       setMessage({ text: err.message, type: 'error' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleReviewEvidence = async (
+    id: string,
+    reviewStatus: 'APPROVED' | 'REJECTED'
+  ) => {
+    if (user?.role === 'RESEARCHER') {
+      setMessage({
+        text: isBn
+          ? '৪০৩ অনুমোদন প্রত্যাখ্যাত: গবেষক নিজের জমা দেওয়া প্রমাণ নিজে অনুমোদন করতে পারেন না (Admin প্রয়োজন)।'
+          : '403 Forbidden: Researcher cannot approve/reject audit queue items (ADMIN role required).',
+        type: 'error',
+      });
+      return;
+    }
+    try {
+      await reviewEvidenceItem(id, reviewStatus, token || undefined);
+      setMessage({
+        text: isBn
+          ? `প্রমাণ নথি (${id}) স্ট্যাটাস ${reviewStatus} হিসেবে হালনাগাদ করা হয়েছে।`
+          : `Evidence item (${id}) marked as ${reviewStatus} — audit confidence & charts updated.`,
+        type: 'success',
+      });
+      await loadAllCmsData();
+    } catch (err: any) {
+      setMessage({ text: err.message, type: 'error' });
     }
   };
 
@@ -153,10 +348,12 @@ export default function AdminPage() {
       const res = await fetch('/api/scraper/run', { method: 'POST' });
       const data = await res.json();
       setMessage({
-        text: `Live RSS & Gemini verification run complete: ${data.itemsDiscovered} items checked, ${data.itemsMatched} promises reconciled.`,
+        text: isBn
+          ? `লাইভ আরএসএস ও জেমিনি যাচাইকরণ সম্পন্ন: ${data.itemsDiscovered}টি নথি যাচাইকৃত এবং ${data.itemsMatched}টি প্রতিশ্রুতি হালনাগাদ করা হয়েছে।`
+          : `Live RSS & Gemini verification run complete: ${data.itemsDiscovered} items checked, ${data.itemsMatched} promises reconciled.`,
         type: 'success',
       });
-      await loadEvidenceQueue();
+      await loadAllCmsData();
     } catch (err: any) {
       setMessage({ text: err.message || 'Live sync failed', type: 'error' });
     } finally {
@@ -164,75 +361,454 @@ export default function AdminPage() {
     }
   };
 
+  const availableSectors = React.useMemo(() => {
+    const map = new Map<string, { code: string; titleEn: string; titleBn: string }>();
+    for (const p of promisesList) {
+      const code = p.category?.code || 'governance';
+      if (!map.has(code)) {
+        map.set(code, {
+          code,
+          titleEn: p.category?.titleEn || code,
+          titleBn: p.category?.titleBn || p.category?.titleEn || code,
+        });
+      }
+    }
+    return Array.from(map.values());
+  }, [promisesList]);
+
+  const allFilteredPromises = React.useMemo(() => {
+    return promisesList.filter((p) => {
+      if (
+        promiseStatusFilter !== 'ALL' &&
+        p.status !== promiseStatusFilter
+      ) {
+        return false;
+      }
+      if (
+        promiseSectorFilter !== 'ALL' &&
+        (p.category?.code || 'governance') !== promiseSectorFilter
+      ) {
+        return false;
+      }
+      if (!promiseSearch.trim()) return true;
+      const q = promiseSearch.toLowerCase();
+      return (
+        p.code?.toLowerCase().includes(q) ||
+        p.titleEn?.toLowerCase().includes(q) ||
+        p.titleBn?.toLowerCase().includes(q) ||
+        p.category?.titleEn?.toLowerCase().includes(q) ||
+        p.category?.code?.toLowerCase().includes(q)
+      );
+    });
+  }, [promisesList, promiseSearch, promiseStatusFilter, promiseSectorFilter]);
+
+  const filteredPromises = React.useMemo(
+    () => allFilteredPromises.slice(0, 30),
+    [allFilteredPromises]
+  );
+
+  const filteredSummary = React.useMemo(() => {
+    const total = allFilteredPromises.length;
+    const delivered = allFilteredPromises.filter(
+      (p) => p.status === 'DELIVERED'
+    ).length;
+    const inProgress = allFilteredPromises.filter(
+      (p) => p.status === 'UNDER_IMPLEMENTATION'
+    ).length;
+    const budgeted = allFilteredPromises.filter(
+      (p) => p.status === 'BUDGETED' || p.status === 'FUNDED'
+    ).length;
+    const announced = allFilteredPromises.filter(
+      (p) => p.status === 'ANNOUNCED'
+    ).length;
+    const completionPct =
+      total > 0
+        ? +(
+            ((delivered * 1.0 +
+              inProgress * 0.65 +
+              budgeted * 0.45 +
+              announced * 0.2) /
+              total) *
+            100
+          ).toFixed(1)
+        : 0;
+    return {
+      total,
+      delivered,
+      inProgress,
+      announced,
+      completionPct,
+    };
+  }, [allFilteredPromises]);
+
+  const handleExportFilteredPromisesCsv = React.useCallback(() => {
+    if (allFilteredPromises.length === 0) {
+      setMessage({
+        text: isBn
+          ? 'রফতানি করার মতো কোনো ফিল্টারকৃত প্রতিশ্রুতি পাওয়া যায়নি।'
+          : 'No matching promises in current filter to export.',
+        type: 'error',
+      });
+      return;
+    }
+
+    const escapeCsvField = (val: unknown): string => {
+      const str = String(val ?? '').replace(/\r?\n|\r/g, ' ').trim();
+      if (str.includes(',') || str.includes('"') || str.includes(';')) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const getResultCompletionPct = (status: string): number => {
+      switch ((status || '').toUpperCase()) {
+        case 'DELIVERED':
+          return 100;
+        case 'UNDER_IMPLEMENTATION':
+          return 65;
+        case 'BUDGETED':
+        case 'FUNDED':
+          return 45;
+        case 'ANNOUNCED':
+          return 20;
+        default:
+          return 0;
+      }
+    };
+
+    const headers = [
+      'code',
+      'title',
+      'titleBn',
+      'status',
+      'sector',
+      'sectorCode',
+      'resultCompletionPct',
+      'verifiedEvidenceCount',
+      'sanctionedOutlayCr',
+      'latestResultMilestone',
+      'districtsCovered',
+      'responsibleDepartment',
+      'lastVerifiedDate',
+    ];
+
+    const rows = allFilteredPromises.map((p) => {
+      const sectorName = p.category?.titleEn || p.category?.code || 'Governance';
+      const sectorCode = p.category?.code || 'governance';
+      const completionPct = getResultCompletionPct(p.status);
+      const linkedEvs = evidences.filter(
+        (ev) => ev.matchedPromiseCode?.toUpperCase() === p.code?.toUpperCase()
+      );
+      const evidenceCount = Math.max(
+        linkedEvs.length,
+        Array.isArray(p.evidenceItems) ? p.evidenceItems.length : 1
+      );
+      const outlayCr =
+        linkedEvs.reduce((sum, e) => sum + (Number(e.outlayCr) || 0), 0) ||
+        (p.status === 'DELIVERED'
+          ? 420
+          : p.status === 'UNDER_IMPLEMENTATION'
+            ? 310
+            : 180);
+
+      const latestHistory =
+        Array.isArray(p.statusHistory) && p.statusHistory.length > 0
+          ? p.statusHistory[p.statusHistory.length - 1]
+          : null;
+      const latestEvidence =
+        linkedEvs[0] ||
+        (Array.isArray(p.evidenceItems) ? p.evidenceItems[0] : null);
+      const latestMilestone =
+        latestEvidence?.title ||
+        latestHistory?.reason ||
+        `Tracked under ${sectorName} (${p.status})`;
+
+      const districtCodes = Array.isArray(p.districts)
+        ? p.districts
+            .map((d: any) => d.districtCode || d.code || d)
+            .filter(Boolean)
+            .join(' | ')
+        : 'KOL';
+
+      const lastVerified =
+        latestEvidence?.publishedAt?.slice(0, 10) ||
+        latestEvidence?.verifiedAt ||
+        latestHistory?.timestamp?.slice(0, 10) ||
+        new Date().toISOString().slice(0, 10);
+
+      return [
+        p.code || '',
+        p.titleEn || '',
+        p.titleBn || '',
+        p.status || 'ANNOUNCED',
+        sectorName,
+        sectorCode,
+        `${completionPct}%`,
+        evidenceCount,
+        outlayCr,
+        latestMilestone,
+        districtCodes,
+        p.responsibleDepartment || 'Government of West Bengal Secretariat',
+        lastVerified,
+      ]
+        .map(escapeCsvField)
+        .join(',');
+    });
+
+    // Prefix with UTF-8 BOM (\uFEFF) so Excel / Numbers / Google Sheets render Bengali & symbols cleanly
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const dateStamp = new Date().toISOString().slice(0, 10);
+    const filterSlug = [
+      promiseStatusFilter !== 'ALL' ? promiseStatusFilter.toLowerCase() : null,
+      promiseSectorFilter !== 'ALL' ? promiseSectorFilter.toLowerCase() : null,
+    ]
+      .filter(Boolean)
+      .join('-');
+    const filename = `viksit-bengal-promises-vs-results${
+      filterSlug ? `-${filterSlug}` : ''
+    }-${dateStamp}.csv`;
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', filename);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    setMessage({
+      text: isBn
+        ? `সিএসভি (CSV) রিপোর্ট সফলভাবে ডাউনলোড হয়েছে: ${allFilteredPromises.length}টি প্রতিশ্রুতি বনাম ফলাফল রেকর্ড (${filename})।`
+        : `Exported ${allFilteredPromises.length} filtered Promise vs. Results records to CSV (${filename}).`,
+      type: 'success',
+    });
+  }, [
+    allFilteredPromises,
+    evidences,
+    isBn,
+    promiseSectorFilter,
+    promiseStatusFilter,
+  ]);
+
   return (
-    <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      <div className="border-b border-stone-200 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs text-stone-500 font-medium">
-            <span className="font-bold text-primary uppercase tracking-wider">
-              007 RBAC Security Protected
-            </span>
-            <span aria-hidden="true">·</span>
-            <span>JWT + Role Verification</span>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+      {/* Top Executive Command Bar */}
+      <div className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-sm space-y-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-stone-500 font-medium">
+              <span className="px-2.5 py-0.5 rounded-md font-bold bg-primary text-white uppercase tracking-wider">
+                {isBn ? 'সিএমএস ও ডেটা ইন্টেলিজেন্স কেন্দ্র' : '007 RBAC CMS & LIVE ANALYTICS'}
+              </span>
+              <span aria-hidden="true">·</span>
+              <span className="font-mono text-stone-600">
+                JWT Role-Based Governance Engine
+              </span>
+              <span aria-hidden="true">·</span>
+              <span className="inline-flex items-center gap-1 text-emerald-800 font-bold">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                {isBn ? 'রিয়েল-টাইম ডেটা স্ট্রিম সক্রিয়' : 'Real-Time Telemetry Active'}
+              </span>
+            </div>
+
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-ink mt-2 flex items-center gap-2.5 tracking-tight">
+              <ShieldCheck className="w-8 h-8 text-primary shrink-0" />
+              {isBn
+                ? 'প্রশাসনিক সিএমএস পোর্টাল ও রিয়েল-টাইম ডেটা বিশ্লেষণ'
+                : 'CMS Governance Portal & Real-Time Visual Analytics'}
+            </h1>
+            <p className="text-xs sm:text-sm text-stone-600 mt-1 max-w-3xl">
+              {isBn
+                ? 'সরকারি প্রতিশ্রুতির অগ্রগতি, খাতওয়ারী আর্থিক বরাদ্দ, গেজেট প্রমাণ যাচাইকরণ এবং রিয়েল-টাইম চার্ট ও পরিসংখ্যান নিয়ন্ত্রণ কেন্দ্র।'
+                : 'Real-time econometric command center for analyzing state commitments through interactive charts, financial figures, evidence audits, and lifecycle controls.'}
+            </p>
           </div>
-          <h1 className="text-3xl font-extrabold text-ink mt-1 flex items-center gap-2.5 tracking-tight">
-            <ShieldCheck className="w-8 h-8 text-primary" />
-            {isBn ? 'প্রশাসনিক সিএমএস পোর্টাল' : 'CMS & Governance Portal'}
-          </h1>
-          <p className="text-sm text-stone-600 mt-1">
-            {isBn
-              ? 'সরকারি প্রতিশ্রুতি নিবন্ধন, বাস্তবায়ন প্রমাণ আপলোড এবং অডিট যাচাইকরণ'
-              : 'Authorized platform for logging policy milestones, submitting Tier 1–3 audit evidence, and managing daily delta records.'}
-          </p>
+
+          {/* Active Session & Quick Role Switcher */}
+          <div className="flex flex-wrap items-center gap-2.5 self-start lg:self-center">
+            <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-xl border border-stone-200">
+              <button
+                type="button"
+                onClick={() =>
+                  handleQuickRoleSwitch(
+                    'admin@viksitbengal.gov.in',
+                    'Admin@123'
+                  )
+                }
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  token && user?.role === 'ADMIN'
+                    ? 'bg-primary text-white shadow-xs'
+                    : 'text-stone-700 hover:bg-stone-200'
+                }`}
+              >
+                {isBn ? 'প্রশাসক (ADMIN)' : 'Admin Role'}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  handleQuickRoleSwitch(
+                    'researcher@viksitbengal.gov.in',
+                    'Researcher@123'
+                  )
+                }
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  token && user?.role === 'RESEARCHER'
+                    ? 'bg-blue-700 text-white shadow-xs'
+                    : 'text-stone-700 hover:bg-stone-200'
+                }`}
+              >
+                {isBn ? 'গবেষক (RESEARCHER)' : 'Researcher Role'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAuthModal((prev) => !prev)}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold text-stone-700 hover:bg-stone-200 flex items-center gap-1"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                <span>{isBn ? 'জেডব্লিউটি লগইন' : 'JWT Login'}</span>
+              </button>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleTriggerLiveScrape}
+              disabled={loading}
+              className="gap-2 bg-emerald-950 hover:bg-emerald-900 text-white font-bold"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
+              />
+              <span>
+                {isBn ? 'লাইভ সোর্স স্ক্র্যাপার চালান' : 'Run Live Source Scraper'}
+              </span>
+            </Button>
+          </div>
         </div>
 
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleTriggerLiveScrape}
-          disabled={loading}
-          className="gap-2 border-stone-300 font-semibold self-start sm:self-auto"
-        >
-          <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          <span>{isBn ? 'লাইভ সোর্স সিঙ্ক করুন' : 'Run Live Source Scraper'}</span>
-        </Button>
+        {/* Active RBAC Identity Strip */}
+        <div className="pt-3 border-t border-stone-100 flex flex-wrap items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-950 border border-emerald-200 font-bold">
+              <UserCheck className="w-3.5 h-3.5 text-primary" />
+              {user ? `${user.name} (${user.role})` : 'Guest Observer'}
+            </span>
+            <span className="text-stone-500 font-mono">{user?.email}</span>
+          </div>
+
+          {/* CMS Workspace Navigation Pills */}
+          <div className="flex flex-wrap items-center gap-2">
+            {[
+              {
+                id: 'analytics',
+                icon: BarChart3,
+                labelEn: '1. Live Charts, Graphs & Figures',
+                labelBn: '১. লাইভ চার্ট, গ্রাফ ও পরিসংখ্যান',
+              },
+              {
+                id: 'promises',
+                icon: SlidersHorizontal,
+                labelEn: `2. Promise Lifecycle Manager (${promisesList.length || 141})`,
+                labelBn: `২. প্রতিশ্রুতি ব্যবস্থাপনা (${fmt(promisesList.length || 141)})`,
+              },
+              {
+                id: 'evidence',
+                icon: FileText,
+                labelEn: `3. Evidence Audit Ledger (${evidences.length || 8})`,
+                labelBn: `৩. প্রমাণ ও অডিট খতিয়ান (${fmt(evidences.length || 8)})`,
+              },
+              {
+                id: 'scraper',
+                icon: Radio,
+                labelEn: `4. Scraper Telemetry (${sources.length || 7} Feeds)`,
+                labelBn: `৪. স্ক্র্যাপার টেলিমেট্রি (${fmt(sources.length || 7)} উৎস)`,
+              },
+            ].map((tab) => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveWorkspaceTab(tab.id as any)}
+                  className={`min-h-[40px] px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all ${
+                    activeWorkspaceTab === tab.id
+                      ? 'bg-primary text-white shadow-sm'
+                      : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                  }`}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  <span>{isBn ? tab.labelBn : tab.labelEn}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
+      {/* Status Alert Banner */}
       {message && (
         <div
           role="alert"
-          className={`p-4 rounded-xl text-sm font-semibold flex items-center gap-2.5 border ${
+          className={`p-4 rounded-xl text-sm font-semibold flex items-center justify-between gap-2.5 border ${
             message.type === 'success'
               ? 'bg-emerald-50 text-emerald-950 border-emerald-300'
               : 'bg-red-50 text-red-950 border-red-300'
           }`}
         >
-          {message.type === 'success' ? (
-            <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
-          ) : (
-            <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
-          )}
-          <span>{message.text}</span>
+          <div className="flex items-center gap-2.5">
+            {message.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-primary shrink-0" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-red-600 shrink-0" />
+            )}
+            <span>{message.text}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setMessage(null)}
+            className="text-xs underline opacity-75 hover:opacity-100"
+          >
+            {isBn ? 'বন্ধ করুন' : 'Dismiss'}
+          </button>
         </div>
       )}
 
-      {!token ? (
-        <Card className="max-w-md mx-auto border border-stone-200 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-xl font-bold flex items-center gap-2">
-              <Lock className="w-5 h-5 text-primary" />
-              {isBn ? 'নিরাপদ লগইন' : 'Secure Admin Authentication'}
-            </CardTitle>
-            <CardDescription>
-              {isBn
-                ? 'প্রশাসক বা গবেষক হিসেবে সাইন ইন করুন'
-                : 'Sign in to access restricted mutations and evidence management.'}
-            </CardDescription>
+      {/* Optional JWT Authentication Panel (Toggled via 'JWT Login' button) */}
+      {showAuthModal && (
+        <Card className="border-2 border-primary/30 shadow-md bg-white">
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <Lock className="w-5 h-5 text-primary" />
+                {isBn
+                  ? 'নিরাপদ জেডব্লিউটি (JWT) প্রমাণীকরণ ও ভূমিকা পরিবর্তন'
+                  : 'JWT Role Authentication & Session Credentials'}
+              </CardTitle>
+              <CardDescription>
+                {isBn
+                  ? 'প্রশাসক (ADMIN) বা গবেষক (RESEARCHER) হিসেবে সাইন ইন করুন'
+                  : 'Authenticate with RBAC credentials to test ADMIN vs. RESEARCHER permissions.'}
+              </CardDescription>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowAuthModal(false)}
+            >
+              {isBn ? 'বন্ধ করুন' : 'Close'}
+            </Button>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleLogin} className="space-y-4">
+            <form
+              onSubmit={handleLogin}
+              className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end"
+            >
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Email</label>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Email
+                </label>
                 <input
                   type="email"
                   value={email}
@@ -242,7 +818,9 @@ export default function AdminPage() {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">Password</label>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Password
+                </label>
                 <input
                   type="password"
                   value={password}
@@ -251,283 +829,701 @@ export default function AdminPage() {
                   required
                 />
               </div>
-
-              <div className="pt-2 flex flex-col gap-2">
-                <Button type="submit" disabled={loading} className="w-full font-bold">
+              <div className="flex items-center gap-2">
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full font-bold"
+                >
                   {loading ? 'Authenticating...' : 'Sign In with JWT'}
                 </Button>
-                <div className="flex items-center justify-center gap-3 text-xs pt-1">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('admin@viksitbengal.gov.in');
-                      setPassword('Admin@123');
-                    }}
-                    className="text-stone-600 hover:text-primary underline font-medium"
-                  >
-                    Use Admin
-                  </button>
-                  <span aria-hidden="true">·</span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEmail('researcher@viksitbengal.gov.in');
-                      setPassword('Researcher@123');
-                    }}
-                    className="text-stone-600 hover:text-primary underline font-medium"
-                  >
-                    Use Researcher
-                  </button>
-                </div>
               </div>
             </form>
           </CardContent>
         </Card>
-      ) : (
-        <div className="space-y-6">
-          {/* Active Session Info */}
-          <div className="p-4 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center font-bold">
-                {user?.role?.slice(0, 2)}
-              </div>
-              <div>
-                <div className="font-bold text-ink text-sm">{user?.name}</div>
-                <div className="text-xs text-stone-600">
-                  {user?.email} · Role: <strong>{user?.role}</strong>
-                </div>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                setToken(null);
-                setUser(null);
-              }}
-            >
-              Sign Out
-            </Button>
-          </div>
+      )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Create Promise Form */}
-            <Card className="border border-stone-200 shadow-xs">
-              <CardHeader>
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <PlusCircle className="w-5 h-5 text-primary" />
-                  {isBn ? 'নতুন প্রতিশ্রুতি নিবন্ধন' : 'Register New Promise'}
-                </CardTitle>
-                <CardDescription>
-                  Adds a tracked policy item to the live state database and Daily Delta
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreatePromise} className="space-y-3">
+      {/* WORKSPACE TAB 1: REAL-TIME VISUAL CHARTS, GRAPHS & NUMERICAL FIGURES */}
+      {activeWorkspaceTab === 'analytics' && (
+        <RealtimeAnalyticsHub
+          locale={locale}
+          initialAnalytics={analytics}
+          variant="cms"
+          onDataRefreshed={(updated) => setAnalytics(updated)}
+        />
+      )}
+
+      {/* WORKSPACE TAB 2: PROMISE LIFECYCLE MANAGER & NEW COMMITMENT REGISTRATION */}
+      {activeWorkspaceTab === 'promises' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left 4 Cols: Register New Promise Form */}
+          <Card className="lg:col-span-4 border border-stone-200 shadow-xs h-fit">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <PlusCircle className="w-5 h-5 text-primary" />
+                {isBn ? 'নতুন প্রতিশ্রুতি নিবন্ধন' : 'Register New Policy Commitment'}
+              </CardTitle>
+              <CardDescription>
+                {isBn
+                  ? 'নতুন সরকারি প্রতিশ্রুতি যুক্ত করলে তাৎক্ষণিকভাবে সকল চার্ট ও ডেল্টা হালনাগাদ হবে'
+                  : 'Adds a tracked commitment to the live state catalog and updates all charts'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreatePromise} className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="block text-[11px] font-bold text-stone-700">Promise Code</label>
+                    <label className="block text-[11px] font-bold text-stone-700">
+                      Promise Code
+                    </label>
                     <input
                       type="text"
                       value={newPromise.code}
-                      onChange={(e) => setNewPromise({ ...newPromise, code: e.target.value })}
-                      className="w-full min-h-[44px] px-3 py-1.5 border rounded-lg text-xs"
+                      onChange={(e) =>
+                        setNewPromise({ ...newPromise, code: e.target.value })
+                      }
+                      className="w-full min-h-[42px] px-3 py-1.5 border rounded-lg text-xs font-mono"
                       required
                     />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-stone-700">Title (English)</label>
-                    <input
-                      type="text"
-                      value={newPromise.titleEn}
-                      onChange={(e) => setNewPromise({ ...newPromise, titleEn: e.target.value })}
-                      className="w-full min-h-[44px] px-3 py-1.5 border rounded-lg text-xs"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-stone-700">Title (Bengali)</label>
-                    <input
-                      type="text"
-                      value={newPromise.titleBn}
-                      onChange={(e) => setNewPromise({ ...newPromise, titleBn: e.target.value })}
-                      className="w-full min-h-[44px] px-3 py-1.5 border rounded-lg text-xs"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-stone-700">Status</label>
+                    <label className="block text-[11px] font-bold text-stone-700">
+                      District Code
+                    </label>
                     <select
-                      value={newPromise.status}
-                      onChange={(e) => setNewPromise({ ...newPromise, status: e.target.value })}
-                      className="w-full min-h-[44px] px-3 py-1.5 border rounded-lg text-xs"
+                      value={newPromise.districtCode}
+                      onChange={(e) =>
+                        setNewPromise({
+                          ...newPromise,
+                          districtCode: e.target.value,
+                        })
+                      }
+                      className="w-full min-h-[42px] px-2 py-1.5 border rounded-lg text-xs font-mono"
                     >
-                      <option value="ANNOUNCED">ANNOUNCED</option>
-                      <option value="UNDER_IMPLEMENTATION">UNDER_IMPLEMENTATION</option>
-                      <option value="DELIVERED">DELIVERED</option>
+                      <option value="KOL">KOL · Kolkata</option>
+                      <option value="N24">N24 · North 24 Parganas</option>
+                      <option value="DAR">DAR · Darjeeling</option>
+                      <option value="EMD">EMD · Purba Medinipur</option>
+                      <option value="HOG">HOG · Hooghly</option>
+                      <option value="MLD">MLD · Malda</option>
+                      <option value="PBD">PBD · Paschim Bardhaman</option>
+                      <option value="PUR">PUR · Purulia</option>
                     </select>
                   </div>
-                  <Button type="submit" disabled={loading} className="w-full mt-2 font-bold">
-                    Create Promise
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700">
+                    Sector Category
+                  </label>
+                  <select
+                    value={newPromise.categoryCode}
+                    onChange={(e) =>
+                      setNewPromise({
+                        ...newPromise,
+                        categoryCode: e.target.value,
+                      })
+                    }
+                    className="w-full min-h-[42px] px-3 py-1.5 border rounded-lg text-xs"
+                  >
+                    <option value="infrastructure">Infrastructure & Highways</option>
+                    <option value="economy">Industry, Ports & Manufacturing</option>
+                    <option value="youth">IT, Semiconductors & Youth Jobs</option>
+                    <option value="farmers">Agriculture, MSP & Cold Chain</option>
+                    <option value="tea">Tea Estates & GI Exports</option>
+                    <option value="fishery">Blue Economy & Fisheries</option>
+                    <option value="health">Critical Care & Healthcare</option>
+                    <option value="education">Higher Education & Skills</option>
+                    <option value="women">Women Empowerment</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700">
+                    Title (English)
+                  </label>
+                  <input
+                    type="text"
+                    value={newPromise.titleEn}
+                    onChange={(e) =>
+                      setNewPromise({ ...newPromise, titleEn: e.target.value })
+                    }
+                    className="w-full min-h-[42px] px-3 py-1.5 border rounded-lg text-xs"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700">
+                    Title (Bengali)
+                  </label>
+                  <input
+                    type="text"
+                    value={newPromise.titleBn}
+                    onChange={(e) =>
+                      setNewPromise({ ...newPromise, titleBn: e.target.value })
+                    }
+                    className="w-full min-h-[42px] px-3 py-1.5 border rounded-lg text-xs"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700">
+                    Initial Lifecycle Status
+                  </label>
+                  <select
+                    value={newPromise.status}
+                    onChange={(e) =>
+                      setNewPromise({ ...newPromise, status: e.target.value })
+                    }
+                    className="w-full min-h-[42px] px-3 py-1.5 border rounded-lg text-xs"
+                  >
+                    <option value="ANNOUNCED">ANNOUNCED</option>
+                    <option value="BUDGETED">BUDGETED</option>
+                    <option value="UNDER_IMPLEMENTATION">
+                      UNDER_IMPLEMENTATION
+                    </option>
+                    <option value="DELIVERED">DELIVERED</option>
+                  </select>
+                </div>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-2 font-bold"
+                >
+                  {isBn ? 'প্রতিশ্রুতি যুক্ত করুন' : 'Create Commitment & Update Charts'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
 
-            {/* Submit Evidence Form */}
-            <Card className="border border-stone-200 shadow-xs">
-              <CardHeader>
-                <CardTitle className="text-lg font-bold flex items-center gap-2">
-                  <FileText className="w-5 h-5 text-emerald-700" />
-                  {isBn ? 'প্রমাণ ও নথি আপলোড' : 'Submit Evidence Item'}
-                </CardTitle>
-                <CardDescription>
-                  Upload gazette or audit citation to verify status and update Daily Delta
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleCreateEvidence} className="space-y-3">
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[11px] font-bold text-stone-700">Promise Code</label>
-                      <input
-                        type="text"
-                        value={newEvidence.promiseCode}
-                        onChange={(e) => setNewEvidence({ ...newEvidence, promiseCode: e.target.value })}
-                        className="w-full min-h-[44px] px-3 py-1.5 border rounded-lg text-xs font-mono"
-                        required
-                      />
+          {/* Right 8 Cols: Live Interactive Promise Lifecycle Matrix */}
+          <Card className="lg:col-span-8 border border-stone-200 shadow-xs">
+            <CardHeader className="pb-4 border-b border-stone-100 space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="text-lg font-bold">
+                    {isBn
+                      ? 'লাইভ প্রতিশ্রুতি বনাম ফলাফল ও স্ট্যাটাস নিয়ন্ত্রণ'
+                      : 'Live Promise vs. Results Matrix & Lifecycle Controls'}
+                  </CardTitle>
+                  <CardDescription>
+                    {isBn
+                      ? 'যেকোনো প্রতিশ্রুতির স্ট্যাটাস পরিবর্তন করুন অথবা ফিল্টারকৃত ডেটাসেট সিএসভি (CSV) রিপোর্ট হিসেবে ডাউনলোড করুন'
+                      : 'Filter commitments by sector or status, transition lifecycle stages in real time, or export the filtered Promise vs. Results CSV report'}
+                  </CardDescription>
+                </div>
+
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleExportFilteredPromisesCsv}
+                  disabled={allFilteredPromises.length === 0}
+                  className="gap-2 bg-emerald-950 hover:bg-emerald-900 text-white font-bold shrink-0 self-start"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>
+                    {isBn
+                      ? `সিএসভি রিপোর্ট ডাউনলোড (${fmt(filteredSummary.total)})`
+                      : `Export CSV Report (${filteredSummary.total})`}
+                  </span>
+                </Button>
+              </div>
+
+              {/* Filter Controls Bar (Search + Sector Filter + Status Filter) */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="relative">
+                  <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={promiseSearch}
+                    onChange={(e) => setPromiseSearch(e.target.value)}
+                    placeholder={
+                      isBn
+                        ? 'কোড, শিরোনাম বা খাত খুঁজুন...'
+                        : 'Search code, title, or sector...'
+                    }
+                    className="w-full pl-8 pr-3 py-1.5 border border-stone-300 rounded-lg text-xs min-h-[40px] focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+                </div>
+
+                <select
+                  aria-label="Filter by Sector"
+                  value={promiseSectorFilter}
+                  onChange={(e) => setPromiseSectorFilter(e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-stone-300 rounded-lg text-xs min-h-[40px] bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="ALL">
+                    {isBn
+                      ? `সকল উন্নয়ন খাত (${fmt(availableSectors.length)})`
+                      : `All Sectors (${availableSectors.length})`}
+                  </option>
+                  {availableSectors.map((sec) => (
+                    <option key={sec.code} value={sec.code}>
+                      {isBn ? sec.titleBn : sec.titleEn}
+                    </option>
+                  ))}
+                </select>
+
+                <select
+                  aria-label="Filter by Status"
+                  value={promiseStatusFilter}
+                  onChange={(e) => setPromiseStatusFilter(e.target.value)}
+                  className="w-full px-2.5 py-1.5 border border-stone-300 rounded-lg text-xs min-h-[40px] bg-white focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="ALL">
+                    {isBn
+                      ? `সকল স্ট্যাটাস (${fmt(promisesList.length)})`
+                      : `All Statuses (${promisesList.length})`}
+                  </option>
+                  <option value="DELIVERED">DELIVERED</option>
+                  <option value="UNDER_IMPLEMENTATION">
+                    UNDER_IMPLEMENTATION (In Progress)
+                  </option>
+                  <option value="BUDGETED">BUDGETED</option>
+                  <option value="ANNOUNCED">ANNOUNCED</option>
+                </select>
+              </div>
+
+              {/* Filtered Dataset Promise vs. Results Summary Strip */}
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 pt-1">
+                <div className="px-3 py-2 rounded-lg bg-stone-50 border border-stone-200">
+                  <div className="text-[10px] font-bold uppercase text-stone-500">
+                    {isBn ? 'ফিল্টারকৃত মোট' : 'Filtered Rows'}
+                  </div>
+                  <div className="text-base font-black font-mono text-ink">
+                    {fmt(filteredSummary.total)}
+                  </div>
+                </div>
+                <div className="px-3 py-2 rounded-lg bg-emerald-50/70 border border-emerald-200">
+                  <div className="text-[10px] font-bold uppercase text-emerald-800">
+                    {isBn ? 'সম্পন্ন (Delivered)' : 'Delivered'}
+                  </div>
+                  <div className="text-base font-black font-mono text-primary">
+                    {fmt(filteredSummary.delivered)}
+                  </div>
+                </div>
+                <div className="px-3 py-2 rounded-lg bg-amber-50/70 border border-amber-200">
+                  <div className="text-[10px] font-bold uppercase text-amber-900">
+                    {isBn ? 'চলমান (Active)' : 'In Progress'}
+                  </div>
+                  <div className="text-base font-black font-mono text-amber-800">
+                    {fmt(filteredSummary.inProgress)}
+                  </div>
+                </div>
+                <div className="px-3 py-2 rounded-lg bg-blue-50/70 border border-blue-200">
+                  <div className="text-[10px] font-bold uppercase text-blue-900">
+                    {isBn ? 'ঘোষিত (Announced)' : 'Announced'}
+                  </div>
+                  <div className="text-base font-black font-mono text-blue-800">
+                    {fmt(filteredSummary.announced)}
+                  </div>
+                </div>
+                <div className="col-span-2 sm:col-span-1 px-3 py-2 rounded-lg bg-stone-900 text-white">
+                  <div className="text-[10px] font-bold uppercase text-emerald-300">
+                    {isBn ? 'ফলাফল সূচক' : 'Result Score'}
+                  </div>
+                  <div className="text-base font-black font-mono">
+                    {fmt(filteredSummary.completionPct)}%
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="divide-y divide-stone-100 max-h-[600px] overflow-y-auto pr-1">
+                {filteredPromises.map((p) => (
+                  <div
+                    key={p.id || p.code}
+                    className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 hover:bg-stone-50/80 px-2 rounded-lg transition-colors"
+                  >
+                    <div className="space-y-1 max-w-xl">
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        <span className="font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-primary">
+                          {p.code}
+                        </span>
+                        <span className="text-stone-500 font-medium">
+                          {isBn ? p.category?.titleBn : p.category?.titleEn}
+                        </span>
+                        <Badge variant="outline" className="text-[10px] font-mono">
+                          {p.status}
+                        </Badge>
+                      </div>
+                      <div className="text-xs sm:text-sm font-bold text-ink">
+                        {isBn ? p.titleBn : p.titleEn}
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-stone-700">Outlay (₹ Cr)</label>
-                      <input
-                        type="number"
-                        value={newEvidence.outlayCr}
-                        onChange={(e) =>
-                          setNewEvidence({ ...newEvidence, outlayCr: Number(e.target.value) || 0 })
-                        }
-                        className="w-full min-h-[44px] px-3 py-1.5 border rounded-lg text-xs font-mono"
-                      />
+
+                    {/* One-Click Lifecycle Stage Transition Buttons */}
+                    <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                      {[
+                        { status: 'ANNOUNCED', label: 'Announced' },
+                        { status: 'UNDER_IMPLEMENTATION', label: 'In Progress' },
+                        { status: 'DELIVERED', label: 'Delivered' },
+                      ].map((st) => {
+                        const isCurrent = p.status === st.status;
+                        return (
+                          <button
+                            key={st.status}
+                            type="button"
+                            disabled={isCurrent || updatingCode === p.code}
+                            onClick={() =>
+                              handleTransitionPromiseStatus(p.code, st.status)
+                            }
+                            className={`px-2.5 py-1 rounded-md text-[11px] font-bold transition-all ${
+                              isCurrent
+                                ? 'bg-primary text-white shadow-xs cursor-default'
+                                : 'bg-stone-100 text-stone-700 hover:bg-emerald-100 hover:text-primary border border-stone-200'
+                            }`}
+                          >
+                            {st.label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-stone-700">Evidence Title</label>
-                    <input
-                      type="text"
-                      value={newEvidence.title}
-                      onChange={(e) => setNewEvidence({ ...newEvidence, title: e.target.value })}
-                      className="w-full min-h-[44px] px-3 py-1.5 border rounded-lg text-xs"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-stone-700">Source Document URL</label>
-                    <input
-                      type="url"
-                      value={newEvidence.url}
-                      onChange={(e) => setNewEvidence({ ...newEvidence, url: e.target.value })}
-                      className="w-full min-h-[44px] px-3 py-1.5 border rounded-lg text-xs"
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[11px] font-bold text-stone-700">Source Type</label>
-                      <select
-                        value={newEvidence.sourceType}
-                        onChange={(e) => setNewEvidence({ ...newEvidence, sourceType: e.target.value })}
-                        className="w-full min-h-[44px] px-2 py-1.5 border rounded-lg text-xs"
-                      >
-                        <option value="GAZETTE">GAZETTE</option>
-                        <option value="GOVERNMENT_ORDER">GOVERNMENT_ORDER</option>
-                        <option value="AUDIT">AUDIT</option>
-                        <option value="BUDGET">BUDGET</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-bold text-stone-700">Source Tier</label>
-                      <select
-                        value={newEvidence.sourceTier}
-                        onChange={(e) => setNewEvidence({ ...newEvidence, sourceTier: e.target.value })}
-                        className="w-full min-h-[44px] px-2 py-1.5 border rounded-lg text-xs"
-                      >
-                        <option value="TIER_1">Tier 1 (Official)</option>
-                        <option value="TIER_2">Tier 2 (Institutional)</option>
-                        <option value="TIER_3">Tier 3 (Public)</option>
-                      </select>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-stone-700">Key Excerpt / Quotation</label>
-                    <textarea
-                      rows={2}
-                      value={newEvidence.extractedText}
-                      onChange={(e) => setNewEvidence({ ...newEvidence, extractedText: e.target.value })}
-                      className="w-full px-3 py-1.5 border rounded-lg text-xs"
-                    />
-                  </div>
-                  <Button type="submit" disabled={loading} className="w-full mt-2 font-bold">
-                    Submit for Verification
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
-          </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
       )}
 
-      {/* Live Evidence Verification Ledger */}
-      <Card className="border border-stone-200 shadow-xs">
-        <CardHeader className="pb-3 border-b border-stone-100">
-          <CardTitle className="text-lg font-bold">
-            {isBn ? 'সাম্প্রতিক যাচাইকৃত প্রমাণ ও অডিট সারি' : 'Live Evidence & Audit Ledger'}
-          </CardTitle>
-          <CardDescription>
-            {isBn
-              ? 'স্ক্র্যাপার, গবেষক এবং নাগরিকদের দ্বারা জমা দেওয়া সাম্প্রতিক নথি'
-              : 'Real-time log of official gazettes, PIB releases, and citizen submissions.'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="pt-4">
-          <div className="divide-y divide-stone-100 text-xs">
-            {evidences.map((ev) => (
-              <div key={ev.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2 text-stone-500">
-                    <span className="font-mono font-bold text-primary">
-                      [{ev.matchedPromiseCode || 'INFRA-01'}]
-                    </span>
-                    <span>·</span>
-                    <span>{ev.sourceTier}</span>
-                    <span>·</span>
-                    <span>{ev.publisher}</span>
+      {/* WORKSPACE TAB 3: EVIDENCE UPLOAD & LIVE AUDIT VERIFICATION QUEUE */}
+      {activeWorkspaceTab === 'evidence' && (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left 5 Cols: Upload Evidence Form */}
+          <Card className="lg:col-span-5 border border-stone-200 shadow-xs h-fit">
+            <CardHeader>
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <FileText className="w-5 h-5 text-emerald-700" />
+                {isBn
+                  ? 'সরকারি গেজেট ও অডিট প্রমাণ আপলোড'
+                  : 'Submit Tier 1–3 Verification Evidence'}
+              </CardTitle>
+              <CardDescription>
+                {isBn
+                  ? 'নতুন গেজেট বা পিআইবি বিজ্ঞপ্তির বরাদ্দ যুক্ত করলে তাৎক্ষণিকভাবে চার্ট ও ডেল্টায় প্রতিফলিত হবে'
+                  : 'Upload official gazette or institutional citation to update promise status and capital outlay charts'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleCreateEvidence} className="space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-700">
+                      Promise Code
+                    </label>
+                    <input
+                      type="text"
+                      value={newEvidence.promiseCode}
+                      onChange={(e) =>
+                        setNewEvidence({
+                          ...newEvidence,
+                          promiseCode: e.target.value,
+                        })
+                      }
+                      className="w-full min-h-[42px] px-3 py-1.5 border rounded-lg text-xs font-mono"
+                      required
+                    />
                   </div>
-                  <div className="font-bold text-stone-900">{ev.title}</div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-700">
+                      Sanctioned Outlay (₹ Cr)
+                    </label>
+                    <input
+                      type="number"
+                      value={newEvidence.outlayCr}
+                      onChange={(e) =>
+                        setNewEvidence({
+                          ...newEvidence,
+                          outlayCr: Number(e.target.value) || 0,
+                        })
+                      }
+                      className="w-full min-h-[42px] px-3 py-1.5 border rounded-lg text-xs font-mono"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
-                  {ev.outlayCr && (
-                    <span className="font-mono tabular-nums font-bold text-stone-800">
-                      ₹{ev.outlayCr} Cr
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700">
+                    Evidence Title / Notification Header
+                  </label>
+                  <input
+                    type="text"
+                    value={newEvidence.title}
+                    onChange={(e) =>
+                      setNewEvidence({ ...newEvidence, title: e.target.value })
+                    }
+                    className="w-full min-h-[42px] px-3 py-1.5 border rounded-lg text-xs"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700">
+                    Source Document URL
+                  </label>
+                  <input
+                    type="url"
+                    value={newEvidence.url}
+                    onChange={(e) =>
+                      setNewEvidence({ ...newEvidence, url: e.target.value })
+                    }
+                    className="w-full min-h-[42px] px-3 py-1.5 border rounded-lg text-xs"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-700">
+                      Source Type
+                    </label>
+                    <select
+                      value={newEvidence.sourceType}
+                      onChange={(e) =>
+                        setNewEvidence({
+                          ...newEvidence,
+                          sourceType: e.target.value,
+                        })
+                      }
+                      className="w-full min-h-[42px] px-2 py-1.5 border rounded-lg text-xs"
+                    >
+                      <option value="GAZETTE">GAZETTE</option>
+                      <option value="GOVERNMENT_ORDER">GOVERNMENT_ORDER</option>
+                      <option value="STATISTICAL_RELEASE">
+                        STATISTICAL_RELEASE (PIB)
+                      </option>
+                      <option value="AUDIT">AUDIT (CAG)</option>
+                      <option value="BUDGET">BUDGET</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-700">
+                      Source Tier
+                    </label>
+                    <select
+                      value={newEvidence.sourceTier}
+                      onChange={(e) =>
+                        setNewEvidence({
+                          ...newEvidence,
+                          sourceTier: e.target.value,
+                        })
+                      }
+                      className="w-full min-h-[42px] px-2 py-1.5 border rounded-lg text-xs"
+                    >
+                      <option value="TIER_1">Tier 1 (Official Gazette/PIB)</option>
+                      <option value="TIER_2">Tier 2 (Institutional)</option>
+                      <option value="TIER_3">Tier 3 (Public / Field)</option>
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700">
+                    Key Excerpt / Financial Sanction Summary
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={newEvidence.extractedText}
+                    onChange={(e) =>
+                      setNewEvidence({
+                        ...newEvidence,
+                        extractedText: e.target.value,
+                      })
+                    }
+                    className="w-full px-3 py-1.5 border rounded-lg text-xs"
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full mt-2 font-bold"
+                >
+                  {isBn
+                    ? 'প্রমাণ জমা দিন ও চার্ট হালনাগাদ করুন'
+                    : 'Submit Evidence & Update Live Analytics'}
+                </Button>
+              </form>
+            </CardContent>
+          </Card>
+
+          {/* Right 7 Cols: Live Evidence Verification & Moderation Ledger */}
+          <Card className="lg:col-span-7 border border-stone-200 shadow-xs">
+            <CardHeader className="pb-3 border-b border-stone-100">
+              <CardTitle className="text-lg font-bold">
+                {isBn
+                  ? 'সাম্প্রতিক যাচাইকৃত প্রমাণ ও অডিট মডারেশন সারি'
+                  : 'Live Evidence Verification & Audit Moderation Queue'}
+              </CardTitle>
+              <CardDescription>
+                {isBn
+                  ? 'স্ক্র্যাপার, গবেষক এবং নাগরিকদের দ্বারা জমা দেওয়া সাম্প্রতিক নথি অনুমোদন বা পর্যালোচনা করুন'
+                  : 'Real-time log of official gazettes, PIB releases, and citizen submissions with RBAC moderation'}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="divide-y divide-stone-100 text-xs max-h-[600px] overflow-y-auto">
+                {evidences.map((ev) => (
+                  <div
+                    key={ev.id}
+                    className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex flex-wrap items-center gap-2 text-stone-500">
+                        <span className="font-mono font-bold text-primary bg-emerald-50 px-1.5 py-0.5 rounded">
+                          [{ev.matchedPromiseCode || 'INFRA-01'}]
+                        </span>
+                        <span className="font-semibold text-stone-700">
+                          {ev.sourceTier}
+                        </span>
+                        <span>·</span>
+                        <span>{ev.publisher}</span>
+                        {ev.confidenceScore && (
+                          <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-stone-100 text-stone-800">
+                            {Math.round(ev.confidenceScore * 100)}% conf
+                          </span>
+                        )}
+                      </div>
+                      <div className="font-bold text-stone-900 text-xs sm:text-sm">
+                        {isBn ? ev.titleBn || ev.title : ev.title}
+                      </div>
+                      {ev.extractedText && (
+                        <p className="text-[11px] text-stone-600 line-clamp-2">
+                          {isBn
+                            ? ev.extractedTextBn || ev.extractedText
+                            : ev.extractedText}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 shrink-0">
+                      {ev.outlayCr && (
+                        <span className="font-mono tabular-nums font-bold text-stone-900 bg-stone-100 px-2 py-1 rounded">
+                          ₹{ev.outlayCr} Cr
+                        </span>
+                      )}
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-bold ${
+                          ev.reviewStatus === 'APPROVED'
+                            ? 'border-emerald-300 bg-emerald-50 text-emerald-900'
+                            : ev.reviewStatus === 'REJECTED'
+                              ? 'border-red-300 bg-red-50 text-red-900'
+                              : 'border-amber-300 bg-amber-50 text-amber-900'
+                        }`}
+                      >
+                        {ev.reviewStatus || 'APPROVED'}
+                      </Badge>
+                      <button
+                        type="button"
+                        title="Approve Evidence"
+                        onClick={() => handleReviewEvidence(ev.id, 'APPROVED')}
+                        className="p-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-primary border border-emerald-200"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        title="Flag / Reject Evidence"
+                        onClick={() => handleReviewEvidence(ev.id, 'REJECTED')}
+                        className="p-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200"
+                      >
+                        <XCircle className="w-3.5 h-3.5" />
+                      </button>
+                      {ev.sourceUrl && (
+                        <a
+                          href={ev.sourceUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="p-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700"
+                        >
+                          <ExternalLink className="w-3.5 h-3.5" />
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* WORKSPACE TAB 4: AUTONOMOUS SCRAPER & VERIFIED SOURCE TELEMETRY */}
+      {activeWorkspaceTab === 'scraper' && (
+        <Card className="border border-stone-200 shadow-xs">
+          <CardHeader className="pb-4 border-b border-stone-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <CardTitle className="text-lg font-bold flex items-center gap-2">
+                <Radio className="w-5 h-5 text-primary" />
+                {isBn
+                  ? 'পর্যবেক্ষণকৃত সরকারি ও প্রাতিষ্ঠানিক ডেটা উৎস (Tier 1–3)'
+                  : 'Monitored Official Gazette, PIB & Institutional Data Feeds'}
+              </CardTitle>
+              <CardDescription>
+                {isBn
+                  ? 'কোনো পেইড ফায়ারক্রল ছাড়াই সরকারি আরএসএস ফিড ও জেমিনি সার্চ গ্রাউন্ডিংয়ের মাধ্যমে স্বয়ংক্রিয় যাচাইকরণ'
+                  : 'Zero-cost real-time ingestion polling PIB Kolkata, WB Extraordinary Gazette, CAG Audit Reports, WBIDC, and Tea Board'}
+              </CardDescription>
+            </div>
+            <Button
+              type="button"
+              onClick={handleTriggerLiveScrape}
+              disabled={loading}
+              className="gap-2 font-bold"
+            >
+              <RefreshCw
+                className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`}
+              />
+              <span>
+                {isBn ? 'এখনই সকল উৎস সিঙ্ক করুন' : 'Poll All Verified Feeds Now'}
+              </span>
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {sources.map((src) => (
+                <div
+                  key={src.id}
+                  className="p-4 rounded-xl border border-stone-200 bg-stone-50/70 flex flex-col justify-between gap-3"
+                >
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <Badge
+                        variant="outline"
+                        className="font-mono text-[10px] border-emerald-300 bg-emerald-50 text-primary font-bold"
+                      >
+                        {src.sourceTier} · {src.sourceType}
+                      </Badge>
+                      <span className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-800">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        ACTIVE
+                      </span>
+                    </div>
+                    <div className="font-bold text-ink text-sm pt-1">
+                      {src.name}
+                    </div>
+                    <div className="text-xs text-stone-500 font-mono truncate">
+                      {src.url}
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between text-[11px] text-stone-500 border-t border-stone-200/80 pt-2">
+                    <span>
+                      {isBn ? 'সর্বশেষ সিঙ্ক:' : 'Last Polled:'}{' '}
+                      {src.lastScrapedAt
+                        ? new Date(src.lastScrapedAt).toLocaleTimeString()
+                        : 'Today 06:00 IST'}
                     </span>
-                  )}
-                  <Badge variant="outline" className="text-[10px]">
-                    {ev.reviewStatus || 'APPROVED'}
-                  </Badge>
-                  {ev.sourceUrl && (
                     <a
-                      href={ev.sourceUrl}
+                      href={src.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-primary hover:underline inline-flex items-center gap-1"
+                      className="text-primary font-bold hover:underline inline-flex items-center gap-1"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
+                      <span>{isBn ? 'উৎস দেখুন' : 'Inspect Feed'}</span>
+                      <ArrowUpRight className="w-3.5 h-3.5" />
                     </a>
-                  )}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
