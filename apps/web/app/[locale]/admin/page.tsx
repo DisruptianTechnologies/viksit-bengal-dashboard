@@ -31,6 +31,9 @@ import {
   UserCheck,
   SlidersHorizontal,
   Download,
+  Users,
+  KeyRound,
+  LogIn,
 } from 'lucide-react';
 import { RealtimeAnalyticsHub } from '@/components/dashboard/RealtimeAnalyticsHub';
 import {
@@ -46,17 +49,29 @@ import {
   updatePromiseLifecycle,
   reviewEvidenceItem,
 } from '@/lib/api';
+import { useAuth } from '@/components/auth/AuthContext';
+import {
+  updateFirestoreUserRole,
+  subscribeToAllUsersForAdmin,
+  type AppUserRole,
+  type AccountAccessStatus,
+} from '@/lib/firebase';
 
 export default function AdminPage() {
   const locale = useLocale();
   const isBn = locale === 'bn';
+  const {
+    userProfile,
+    signInWithGoogle,
+    setLocalRoleOverride,
+  } = useAuth();
 
   const fmt = React.useCallback(
     (val: number | string) => (isBn ? toBengaliNumerals(val) : String(val)),
     [isBn]
   );
 
-  // Pre-authenticated default Admin session for immediate CMS access, with full JWT login/role switcher support
+  // Pre-authenticated default Admin session for immediate CMS access, synced with AuthContext & Google Auth
   const [email, setEmail] = React.useState('admin@viksitbengal.gov.in');
   const [password, setPassword] = React.useState('Admin@123');
   const [token, setToken] = React.useState<string | null>('jwt-cms-live-admin-token');
@@ -69,7 +84,7 @@ export default function AdminPage() {
   const [showAuthModal, setShowAuthModal] = React.useState(false);
 
   const [activeWorkspaceTab, setActiveWorkspaceTab] = React.useState<
-    'analytics' | 'promises' | 'evidence' | 'scraper'
+    'analytics' | 'promises' | 'evidence' | 'scraper' | 'rbac'
   >('analytics');
 
   const [loading, setLoading] = React.useState(false);
@@ -77,6 +92,13 @@ export default function AdminPage() {
   const [promisesList, setPromisesList] = React.useState<any[]>([]);
   const [evidences, setEvidences] = React.useState<any[]>([]);
   const [sources, setSources] = React.useState<ScrapedSourceDto[]>([]);
+  const [rbacUsers, setRbacUsers] = React.useState<any[]>([]);
+  const [newRbacUser, setNewRbacUser] = React.useState({
+    email: '',
+    displayName: '',
+    role: 'RESEARCHER' as AppUserRole,
+    districtCode: 'KOL',
+  });
   const [promiseSearch, setPromiseSearch] = React.useState('');
   const [promiseStatusFilter, setPromiseStatusFilter] = React.useState('ALL');
   const [promiseSectorFilter, setPromiseSectorFilter] = React.useState('ALL');
@@ -118,17 +140,21 @@ export default function AdminPage() {
 
   const loadAllCmsData = React.useCallback(async () => {
     try {
-      const [analyticsData, promisesData, evidencesData, sourcesData] =
+      const [analyticsData, promisesData, evidencesData, sourcesData, usersRes] =
         await Promise.all([
           getLiveAnalytics().catch(() => null),
           getPromises().catch(() => []),
           getEvidence().catch(() => []),
           getScraperSources().catch(() => []),
+          fetch('/api/users')
+            .then((r) => (r.ok ? r.json() : { users: [] }))
+            .catch(() => ({ users: [] })),
         ]);
       if (analyticsData) setAnalytics(analyticsData);
       if (Array.isArray(promisesData)) setPromisesList(promisesData);
       if (Array.isArray(evidencesData)) setEvidences(evidencesData);
       if (Array.isArray(sourcesData)) setSources(sourcesData);
+      if (Array.isArray(usersRes?.users)) setRbacUsers(usersRes.users);
     } catch {
       // ignore transient error
     }
@@ -137,6 +163,143 @@ export default function AdminPage() {
   React.useEffect(() => {
     loadAllCmsData();
   }, [loadAllCmsData]);
+
+  // Sync active user with Google Auth / AuthContext profile when signed in
+  React.useEffect(() => {
+    if (userProfile && userProfile.role !== 'CITIZEN') {
+      setUser({
+        id: userProfile.uid,
+        name: userProfile.displayName,
+        email: userProfile.email,
+        role: userProfile.role,
+      });
+      setToken(
+        userProfile.role === 'ADMIN'
+          ? 'jwt-live-admin-session'
+          : 'jwt-live-researcher-session'
+      );
+    }
+  }, [userProfile]);
+
+  // Subscribe to real-time Firestore /users documents when authenticated
+  React.useEffect(() => {
+    const unsub = subscribeToAllUsersForAdmin((firestoreUsers) => {
+      if (firestoreUsers.length > 0) {
+        setRbacUsers((prev) => {
+          const map = new Map<string, any>();
+          for (const u of prev) map.set(u.email.toLowerCase(), u);
+          for (const fu of firestoreUsers) {
+            map.set(fu.email.toLowerCase(), {
+              ...map.get(fu.email.toLowerCase()),
+              ...fu,
+              authProvider: 'google',
+            });
+          }
+          return Array.from(map.values());
+        });
+      }
+    });
+    return () => unsub();
+  }, [userProfile?.uid]);
+
+  const handleUpdateUserRbac = async (
+    targetUser: any,
+    updates: { role?: AppUserRole; accessStatus?: AccountAccessStatus }
+  ) => {
+    if (user?.role !== 'ADMIN') {
+      setMessage({
+        text: isBn
+          ? '৪০৩ অনুমোদন প্রত্যাখ্যাত: শুধুমাত্র ADMIN ব্যবহারকারীর রোল ও অনুমতি পরিবর্তন করতে পারেন।'
+          : '403 Forbidden: Only ADMIN role can modify user roles and access permissions.',
+        type: 'error',
+      });
+      return;
+    }
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/users', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token || 'jwt-live-admin-session'}`,
+        },
+        body: JSON.stringify({
+          uid: targetUser.uid,
+          email: targetUser.email,
+          ...updates,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to update user role');
+
+      try {
+        await updateFirestoreUserRole(targetUser.uid, updates, targetUser.email);
+      } catch {
+        // Non-blocking if user hasn't created Firestore doc yet
+      }
+
+      setMessage({
+        text: isBn
+          ? `${targetUser.displayName} (${targetUser.email})-এর অনুমতি সফলভাবে হালনাগাদ করা হয়েছে: ${updates.role || targetUser.role} · ${updates.accessStatus || targetUser.accessStatus}`
+          : `Updated permissions for ${targetUser.displayName} (${targetUser.email}) → Role: ${updates.role || targetUser.role} | Status: ${updates.accessStatus || targetUser.accessStatus}`,
+        type: 'success',
+      });
+      await loadAllCmsData();
+    } catch (err: any) {
+      setMessage({ text: err.message, type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddPreApprovedUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (user?.role !== 'ADMIN') {
+      setMessage({
+        text: isBn
+          ? '৪০৩ অনুমোদন প্রত্যাখ্যাত: শুধুমাত্র ADMIN নতুন রোল বরাদ্দ করতে পারেন।'
+          : '403 Forbidden: Only ADMIN role can pre-approve user roles.',
+        type: 'error',
+      });
+      return;
+    }
+    setLoading(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: newRbacUser.email,
+          displayName: newRbacUser.displayName || newRbacUser.email.split('@')[0],
+          role: newRbacUser.role,
+          districtCode: newRbacUser.districtCode,
+          accessStatus: 'APPROVED',
+          authProvider: 'google',
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Failed to add user');
+      setNewRbacUser({
+        email: '',
+        displayName: '',
+        role: 'RESEARCHER',
+        districtCode: 'KOL',
+      });
+      setMessage({
+        text: isBn
+          ? `${data.user.email}-কে ${data.user.role} রোলে নিবন্ধিত করা হয়েছে।`
+          : `Pre-authorized ${data.user.email} with role ${data.user.role}.`,
+        type: 'success',
+      });
+      await loadAllCmsData();
+    } catch (err: any) {
+      setMessage({ text: err.message, type: 'error' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -152,6 +315,9 @@ export default function AdminPage() {
       if (!res.ok) throw new Error(data.message || 'Login failed');
       setToken(data.accessToken);
       setUser(data.user);
+      if (data.user?.role) {
+        setLocalRoleOverride(data.user.role);
+      }
       setShowAuthModal(false);
       setMessage({
         text: isBn
@@ -186,6 +352,9 @@ export default function AdminPage() {
       if (res.ok) {
         setToken(data.accessToken);
         setUser(data.user);
+        if (data.user?.role) {
+          setLocalRoleOverride(data.user.role);
+        }
         setShowAuthModal(false);
         setMessage({
           text: isBn
@@ -723,6 +892,12 @@ export default function AdminPage() {
                 icon: Radio,
                 labelEn: `4. Scraper Telemetry (${sources.length || 7} Feeds)`,
                 labelBn: `৪. স্ক্র্যাপার টেলিমেট্রি (${fmt(sources.length || 7)} উৎস)`,
+              },
+              {
+                id: 'rbac',
+                icon: Users,
+                labelEn: `5. Users, Google Auth & Roles (${rbacUsers.length || 6})`,
+                labelBn: `৫. ব্যবহারকারী ও রোল অনুমতি (${fmt(rbacUsers.length || 6)})`,
               },
             ].map((tab) => {
               const Icon = tab.icon;
@@ -1523,6 +1698,289 @@ export default function AdminPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* WORKSPACE TAB 5: USERS, GOOGLE AUTH & ROLE PERMISSIONS (RBAC CONSOLE) */}
+      {activeWorkspaceTab === 'rbac' && (
+        <div className="space-y-6">
+          {/* RBAC Summary Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            <div className="p-4 rounded-xl bg-white border border-stone-200 shadow-xs">
+              <div className="text-[11px] font-bold uppercase text-stone-500">
+                {isBn ? 'মোট নিবন্ধিত অ্যাকাউন্ট' : 'Total Registered Users'}
+              </div>
+              <div className="text-2xl font-black font-mono text-ink mt-1">
+                {fmt(rbacUsers.length)}
+              </div>
+            </div>
+            <div className="p-4 rounded-xl bg-emerald-50/70 border border-emerald-200 shadow-xs">
+              <div className="text-[11px] font-bold uppercase text-emerald-900">
+                {isBn ? 'অ্যাডমিন (ADMIN)' : 'Administrators (ADMIN)'}
+              </div>
+              <div className="text-2xl font-black font-mono text-primary mt-1">
+                {fmt(rbacUsers.filter((u) => u.role === 'ADMIN').length)}
+              </div>
+            </div>
+            <div className="p-4 rounded-xl bg-amber-50/70 border border-amber-200 shadow-xs">
+              <div className="text-[11px] font-bold uppercase text-amber-900">
+                {isBn ? 'গবেষক (RESEARCHER)' : 'Researchers (RESEARCHER)'}
+              </div>
+              <div className="text-2xl font-black font-mono text-amber-800 mt-1">
+                {fmt(rbacUsers.filter((u) => u.role === 'RESEARCHER').length)}
+              </div>
+            </div>
+            <div className="p-4 rounded-xl bg-blue-50/70 border border-blue-200 shadow-xs">
+              <div className="text-[11px] font-bold uppercase text-blue-900">
+                {isBn ? 'নাগরিক (CITIZEN)' : 'Verified Citizens (CITIZEN)'}
+              </div>
+              <div className="text-2xl font-black font-mono text-blue-800 mt-1">
+                {fmt(rbacUsers.filter((u) => u.role === 'CITIZEN').length)}
+              </div>
+            </div>
+            <div className="p-4 rounded-xl bg-red-50/70 border border-red-200 shadow-xs">
+              <div className="text-[11px] font-bold uppercase text-red-900">
+                {isBn ? 'সীমিত (RESTRICTED)' : 'Restricted Accounts'}
+              </div>
+              <div className="text-2xl font-black font-mono text-red-700 mt-1">
+                {fmt(
+                  rbacUsers.filter((u) => u.accessStatus === 'RESTRICTED').length
+                )}
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left 4 Cols: Pre-Approve Google Account & Role Assignment */}
+            <Card className="lg:col-span-4 border border-stone-200 shadow-xs h-fit">
+              <CardHeader>
+                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <KeyRound className="w-5 h-5 text-primary" />
+                  {isBn
+                    ? 'গুগল অ্যাকাউন্ট ও রোল পূর্ব-অনুমোদন'
+                    : 'Pre-Approve Google User & Assign Role'}
+                </CardTitle>
+                <CardDescription>
+                  {isBn
+                    ? 'নতুন গুগল ব্যবহারকারীকে ADMIN, RESEARCHER বা CITIZEN রোল বরাদ্দ করুন'
+                    : 'Assign ADMIN, RESEARCHER, or CITIZEN permissions to a Google or institutional email address.'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <form onSubmit={handleAddPreApprovedUser} className="space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                      Google / Institutional Email
+                    </label>
+                    <input
+                      type="email"
+                      value={newRbacUser.email}
+                      onChange={(e) =>
+                        setNewRbacUser({ ...newRbacUser, email: e.target.value })
+                      }
+                      placeholder="user@gmail.com"
+                      className="w-full min-h-[42px] px-3 py-1.5 border border-stone-300 rounded-lg text-xs"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                      Full Display Name
+                    </label>
+                    <input
+                      type="text"
+                      value={newRbacUser.displayName}
+                      onChange={(e) =>
+                        setNewRbacUser({
+                          ...newRbacUser,
+                          displayName: e.target.value,
+                        })
+                      }
+                      placeholder="Dr. Indranil Sen"
+                      className="w-full min-h-[42px] px-3 py-1.5 border border-stone-300 rounded-lg text-xs"
+                      required
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                        Assigned Role
+                      </label>
+                      <select
+                        value={newRbacUser.role}
+                        onChange={(e) =>
+                          setNewRbacUser({
+                            ...newRbacUser,
+                            role: e.target.value as AppUserRole,
+                          })
+                        }
+                        className="w-full min-h-[42px] px-2.5 py-1.5 border border-stone-300 rounded-lg text-xs bg-white"
+                      >
+                        <option value="CITIZEN">CITIZEN</option>
+                        <option value="RESEARCHER">RESEARCHER</option>
+                        <option value="ADMIN">ADMIN</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-bold text-stone-700 mb-1">
+                        District Code
+                      </label>
+                      <input
+                        type="text"
+                        value={newRbacUser.districtCode}
+                        onChange={(e) =>
+                          setNewRbacUser({
+                            ...newRbacUser,
+                            districtCode: e.target.value.toUpperCase(),
+                          })
+                        }
+                        className="w-full min-h-[42px] px-3 py-1.5 border border-stone-300 rounded-lg text-xs font-mono"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full font-bold"
+                  >
+                    {isBn
+                      ? 'রোল বরাদ্দ ও সংরক্ষণ করুন'
+                      : 'Authorize User & Assign Role'}
+                  </Button>
+                </form>
+
+                <div className="pt-3 border-t border-stone-200 space-y-2">
+                  <div className="text-xs font-bold text-stone-700">
+                    {isBn ? 'লাইভ গুগল ওঅথ যাচাইকরণ:' : 'Live Google OAuth Sign-In:'}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => void signInWithGoogle()}
+                    className="w-full min-h-[42px] px-3 py-2 rounded-lg border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 text-emerald-950 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <LogIn className="w-4 h-4 text-primary" />
+                    <span>
+                      {isBn
+                        ? 'গুগল অ্যাকাউন্ট দিয়ে সাইন-ইন / পরিবর্তন করুন'
+                        : 'Link / Switch Google Account via Popup'}
+                    </span>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Right 8 Cols: Live User & Role Permission Matrix */}
+            <Card className="lg:col-span-8 border border-stone-200 shadow-xs">
+              <CardHeader className="pb-4 border-b border-stone-100">
+                <CardTitle className="text-lg font-bold">
+                  {isBn
+                    ? 'ব্যবহারকারী, গুগল ওঅথ এবং ভূমিকা অনুমতি তালিকা (Firestore + RBAC)'
+                    : 'Registered Users, Google Auth Accounts & Role Permissions'}
+                </CardTitle>
+                <CardDescription>
+                  {isBn
+                    ? 'যেকোনো ব্যবহারকারীর রোল (CITIZEN / RESEARCHER / ADMIN) পরিবর্তন করুন অথবা প্রবেশাধিকার নিয়ন্ত্রণ করুন'
+                    : 'Promote or demote users between CITIZEN, RESEARCHER, and ADMIN roles or restrict portal access in real time'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="pt-4">
+                <div className="divide-y divide-stone-100">
+                  {rbacUsers.map((u) => (
+                    <div
+                      key={u.uid || u.email}
+                      className="py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="font-bold text-sm text-ink">
+                            {u.displayName}
+                          </span>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] font-mono font-bold ${
+                              u.role === 'ADMIN'
+                                ? 'border-emerald-300 bg-emerald-50 text-emerald-950'
+                                : u.role === 'RESEARCHER'
+                                  ? 'border-amber-300 bg-amber-50 text-amber-950'
+                                  : 'border-blue-300 bg-blue-50 text-blue-950'
+                            }`}
+                          >
+                            {u.role}
+                          </Badge>
+                          <Badge
+                            variant="outline"
+                            className={`text-[10px] font-mono ${
+                              u.accessStatus === 'RESTRICTED'
+                                ? 'border-red-300 bg-red-50 text-red-900 font-bold'
+                                : 'border-stone-200 bg-stone-50 text-stone-600'
+                            }`}
+                          >
+                            {u.accessStatus || 'APPROVED'}
+                          </Badge>
+                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-stone-100 text-stone-600">
+                            {u.authProvider === 'institutional'
+                              ? 'JWT Institutional'
+                              : 'Google OAuth'}
+                          </span>
+                        </div>
+                        <div className="text-xs text-stone-500 font-mono">
+                          {u.email} · District: {u.districtCode || 'KOL'}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5 shrink-0">
+                        {(['CITIZEN', 'RESEARCHER', 'ADMIN'] as AppUserRole[]).map(
+                          (targetRole) => (
+                            <button
+                              key={targetRole}
+                              type="button"
+                              disabled={loading || u.role === targetRole}
+                              onClick={() =>
+                                handleUpdateUserRbac(u, { role: targetRole })
+                              }
+                              className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border transition-colors cursor-pointer ${
+                                u.role === targetRole
+                                  ? 'bg-stone-900 text-white border-stone-900 cursor-default'
+                                  : 'bg-white text-stone-700 border-stone-300 hover:bg-stone-100'
+                              }`}
+                            >
+                              {targetRole}
+                            </button>
+                          )
+                        )}
+
+                        <button
+                          type="button"
+                          disabled={loading}
+                          onClick={() =>
+                            handleUpdateUserRbac(u, {
+                              accessStatus:
+                                u.accessStatus === 'RESTRICTED'
+                                  ? 'APPROVED'
+                                  : 'RESTRICTED',
+                            })
+                          }
+                          className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border cursor-pointer ${
+                            u.accessStatus === 'RESTRICTED'
+                              ? 'bg-emerald-50 text-emerald-900 border-emerald-300 hover:bg-emerald-100'
+                              : 'bg-red-50 text-red-800 border-red-200 hover:bg-red-100'
+                          }`}
+                        >
+                          {u.accessStatus === 'RESTRICTED'
+                            ? isBn
+                              ? 'অনুমোদন দিন'
+                              : 'Approve'
+                            : isBn
+                              ? 'সীমিত করুন'
+                              : 'Restrict'}
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       )}
     </div>
   );

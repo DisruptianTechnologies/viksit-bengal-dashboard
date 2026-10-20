@@ -6,6 +6,7 @@ import { getMessages, setRequestLocale } from 'next-intl/server';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { SabaiFoundationModal } from '@/components/citizen/SabaiFoundationModal';
+import { AuthProvider } from '@/components/auth/AuthContext';
 import { locales, type Locale } from '@/i18n';
 
 export const metadata: Metadata = {
@@ -47,24 +48,26 @@ export default async function LocaleLayout({
         className="bg-lightBg text-ink flex flex-col min-h-screen antialiased"
       >
         <NextIntlClientProvider locale={locale} messages={messages}>
-          {/* High-visibility skip-to-content navigation link for keyboard accessibility */}
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-primary focus:font-bold focus:rounded-md focus:shadow-2xl focus:ring-2 focus:ring-primary focus:outline-none"
-          >
-            {skipText}
-          </a>
-          <Header />
-          <main
-            id="main-content"
-            role="main"
-            tabIndex={-1}
-            className="flex-1 outline-none"
-          >
-            {children}
-          </main>
-          <Footer />
-          <SabaiFoundationModal locale={locale} enableGlobalTrigger={true} />
+          <AuthProvider locale={locale}>
+            {/* High-visibility skip-to-content navigation link for keyboard accessibility */}
+            <a
+              href="#main-content"
+              className="sr-only focus:not-sr-only focus:fixed focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-white focus:text-primary focus:font-bold focus:rounded-md focus:shadow-2xl focus:ring-2 focus:ring-primary focus:outline-none"
+            >
+              {skipText}
+            </a>
+            <Header />
+            <main
+              id="main-content"
+              role="main"
+              tabIndex={-1}
+              className="flex-1 outline-none"
+            >
+              {children}
+            </main>
+            <Footer />
+            <SabaiFoundationModal locale={locale} enableGlobalTrigger={true} />
+          </AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>
