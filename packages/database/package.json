@@ -1,6 +1,6 @@
 {
   "name": "@viksit/database",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "main": "./index.js",
   "types": "./index.ts",
   "scripts": {
@@ -14,10 +14,10 @@
     "bcryptjs": "^3.0.3"
   },
   "devDependencies": {
-    "@types/node": "latest",
+    "@types/node": "^20.12.7",
     "prisma": "^5.22.0",
-    "tsx": "latest",
-    "typescript": "^5.0.0"
+    "tsx": "^4.19.0",
+    "typescript": "^5.4.5"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

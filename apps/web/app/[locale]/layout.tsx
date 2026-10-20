@@ -9,15 +9,17 @@ import { SabaiFoundationModal } from '@/components/citizen/SabaiFoundationModal'
 import { locales, type Locale } from '@/i18n';
 
 export const metadata: Metadata = {
-  title: 'Viksit Bengal 2047 Dashboard',
+  title: 'Viksit Bengal Dashboard',
   description:
-    'West Bengal Governance, Policy Commitments, and Two-Part Economic Progress Tracker ($1T by 2033 & $5T GSDP by 2047) across 23 districts.',
+    'West Bengal Governance, Policy Commitments, and $1 Trillion Economic Progress Tracker across 23 districts.',
   openGraph: {
-    title: 'Viksit Bengal 2047 Dashboard',
+    title: 'Viksit Bengal Dashboard',
     description:
-      'West Bengal Governance, Policy Commitments, and Two-Part Economic Progress Tracker ($1T by 2033 & $5T GSDP by 2047) across 23 districts.',
+      'West Bengal Governance, Policy Commitments, and $1 Trillion Economic Progress Tracker across 23 districts.',
   },
 };
+
+export const dynamic = 'force-dynamic';
 
 export function generateStaticParams() {
   return locales.map((locale) => ({ locale }));
