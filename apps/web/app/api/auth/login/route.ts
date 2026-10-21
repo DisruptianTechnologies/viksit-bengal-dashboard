@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import seedData from '../../../../../../packages/database/prisma/seed-data.json';
+import { generateAuthToken } from '@/lib/auth-guard';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,18 +21,15 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const payload = Buffer.from(
-      JSON.stringify({
-        sub: matched.email,
-        email: matched.email,
-        name: matched.name,
-        role: matched.role,
-        iat: Date.now(),
-      })
-    ).toString('base64url');
+    const accessToken = generateAuthToken({
+      sub: matched.email,
+      email: matched.email,
+      name: matched.name,
+      role: (matched.role || 'PUBLIC') as any,
+    });
 
     return NextResponse.json({
-      accessToken: `vb_jwt_${payload}`,
+      accessToken,
       user: {
         id: `usr-${matched.role.toLowerCase()}`,
         email: matched.email,

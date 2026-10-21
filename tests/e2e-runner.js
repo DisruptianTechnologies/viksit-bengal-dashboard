@@ -16,6 +16,9 @@ import * as leafletMapTier1 from './tier1-feature-coverage/leaflet-map.tier1.tes
 import * as accessibilityTier1 from './tier1-feature-coverage/accessibility.tier1.test.js';
 import * as localizationTier1 from './tier1-feature-coverage/localization.tier1.test.js';
 import * as scraperTallyChatTier1 from './tier1-feature-coverage/scraper-tally-chat.tier1.test.js';
+import * as databaseTier1 from './tier1-feature-coverage/database.tier1.test.js';
+import * as authGuardTier1 from './tier1-feature-coverage/auth-guard.tier1.test.js';
+import * as externalApisTier1 from './tier1-feature-coverage/external-apis.tier1.test.js';
 
 import * as authTier2 from './tier2-boundaries/auth-boundaries.tier2.test.js';
 import * as districtsTier2 from './tier2-boundaries/districts-boundaries.tier2.test.js';
@@ -59,6 +62,9 @@ const SUITES = [
   { tier: '1', name: 'Tier 1: Accessibility (WCAG 2.2 AA Contrast, Skip Link, ARIA)', runner: accessibilityTier1.run },
   { tier: '1', name: 'Tier 1: Dynamic Locale & next-intl (Bilingual EN/BN & Numerals)', runner: localizationTier1.run },
   { tier: '1', name: 'Tier 1: Automated Scraper, Tally Engine & Citizen AI Chatbot', runner: scraperTallyChatTier1.run },
+  { tier: '1', name: 'Tier 1: Hostinger MySQL Database Schema & Adapter', runner: databaseTier1.run },
+  { tier: '1', name: 'Tier 1: Cryptographic JWT & Dual Auth RBAC Guard', runner: authGuardTier1.run },
+  { tier: '1', name: 'Tier 1: External APIs & Gazette Intelligence Integration', runner: externalApisTier1.run },
 
   // Tier 2
   { tier: '2', name: 'Tier 2: Auth Boundaries (Empty DTOs, Tampered & Expired Tokens)', runner: authTier2.run },

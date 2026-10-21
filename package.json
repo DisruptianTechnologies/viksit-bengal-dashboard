@@ -2,9 +2,9 @@
   "name": "viksit-bengal-dashboard",
   "private": true,
   "scripts": {
-    "build": "NODE_ENV=production npm run build --workspace=apps/web",
+    "build": "npm run build --workspace=apps/web",
     "dev": "npm run dev --workspace=apps/web",
-    "start": "NODE_ENV=production npm run start --workspace=apps/web",
+    "start": "npm run start --workspace=apps/web",
     "lint": "npm run lint --workspace=apps/web",
     "test:e2e": "node tests/e2e-runner.js"
   },

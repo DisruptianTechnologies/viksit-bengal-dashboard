@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getLiveStore, getIstDateKey } from '@/lib/live-store';
+import { authenticateApiRequest } from '@/lib/auth-guard';
+import { prisma } from '@viksit/database';
 
 export const dynamic = 'force-dynamic';
 
@@ -28,9 +30,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ message: 'Unauthorized: JWT token required' }, { status: 401 });
+    const auth = authenticateApiRequest(req, ['ADMIN']);
+    if (!auth.authorized) {
+      return NextResponse.json({ message: auth.error }, { status: auth.status });
     }
 
     const body = await req.json();
@@ -98,16 +100,35 @@ export async function POST(req: NextRequest) {
       matchedPromiseCode: code,
       matchedPromiseTitle: titleEn,
       matchedPromiseTitleBn: titleBn,
-      previousStatus: 'ANNOUNCED',
+      previousStatus: 'NOT_STARTED',
       proposedStatus: newPromise.status,
       districtCode: body.districtCode || 'KOL',
       districtNameEn: 'Kolkata',
       districtNameBn: 'কলকাতা',
-      outlayCr: 450,
-      confidenceScore: 0.98,
+      outlayCr: Number(body.outlayCr) || 500,
+      confidenceScore: 0.99,
       reviewStatus: 'APPROVED',
       isLiveWebFetched: false,
     });
+
+    // Also persist into MySQL database when active
+    try {
+      await prisma.promise.create({
+        data: {
+          code: newPromise.code,
+          titleEn: newPromise.titleEn,
+          titleBn: newPromise.titleBn,
+          descriptionEn: newPromise.descriptionEn,
+          descriptionBn: newPromise.descriptionBn,
+          status: newPromise.status as any,
+          confidence: 'A',
+          isKeyPromise: true,
+          categoryId: 'cat-infra-01',
+        },
+      });
+    } catch {
+      // In-memory store already updated
+    }
 
     return NextResponse.json(newPromise, { status: 201 });
   } catch (err: any) {
@@ -117,9 +138,9 @@ export async function POST(req: NextRequest) {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ message: 'Unauthorized: JWT token required' }, { status: 401 });
+    const auth = authenticateApiRequest(req, ['ADMIN']);
+    if (!auth.authorized) {
+      return NextResponse.json({ message: auth.error }, { status: auth.status });
     }
 
     const body = await req.json();
@@ -183,4 +204,3 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ message: err.message || 'Failed to update promise status' }, { status: 400 });
   }
 }
-

@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -64,203 +64,204 @@ enum Scenario {
   AMBITIOUS
 }
 
-
 model User {
-  id String @id @default(uuid())
-  email String @unique
-  name String
-  password String?
-  role Role @default(PUBLIC)
-  googleId String?
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String?
+  role      Role     @default(PUBLIC)
+  googleId  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
 model Category {
-  id String @id @default(uuid())
-  code String @unique
-  titleEn String
-  titleBn String
+  id         String    @id @default(uuid())
+  code       String    @unique
+  titleEn    String
+  titleBn    String
   subtitleEn String?
   subtitleBn String?
-  icon String?
-  sortOrder Int @default(0)
-  promises Promise[]
+  icon       String?
+  sortOrder  Int       @default(0)
+  promises   Promise[]
 }
 
 model Promise {
-  id String @id @default(uuid())
-  code String @unique
-  categoryId String
-  category Category @relation(fields: [categoryId], references: [id])
-  titleEn String
-  titleBn String
-  descriptionEn String?
-  descriptionBn String?
-  highlightEn String?
-  highlightBn String?
-  originalText String?
-  commitmentDate DateTime?
-  deadlineDate DateTime?
-  responsibleLevel String?
+  id                    String            @id @default(uuid())
+  code                  String            @unique
+  categoryId            String
+  category              Category          @relation(fields: [categoryId], references: [id])
+  titleEn               String
+  titleBn               String
+  descriptionEn         String?           @db.Text
+  descriptionBn         String?           @db.Text
+  highlightEn           String?
+  highlightBn           String?
+  originalText          String?           @db.Text
+  commitmentDate        DateTime?
+  deadlineDate          DateTime?
+  responsibleLevel      String?
   responsibleDepartment String?
-  status PromiseStatus @default(NOT_STARTED)
-  confidence Confidence @default(C)
-  isKeyPromise Boolean @default(false)
-  keyPromiseNumber Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  districts PromiseDistrict[]
-  updates PromiseUpdate[]
-  history StatusHistory[]
+  status                PromiseStatus     @default(NOT_STARTED)
+  confidence            Confidence        @default(C)
+  isKeyPromise          Boolean           @default(false)
+  keyPromiseNumber      Int?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+  districts             PromiseDistrict[]
+  updates               PromiseUpdate[]
+  history               StatusHistory[]
 }
 
 model District {
-  id String @id @default(uuid())
-  code String @unique
-  nameEn String
-  nameBn String
-  population Int?
-  area Float?
-  promises PromiseDistrict[]
+  id              String            @id @default(uuid())
+  code            String            @unique
+  nameEn          String
+  nameBn          String
+  population      Int?
+  area            Float?
+  promises        PromiseDistrict[]
   indicatorValues IndicatorValue[]
-  updates Update[]
+  updates         Update[]
 }
 
 model PromiseDistrict {
-  promiseId String
+  promiseId  String
   districtId String
-  promise Promise @relation(fields: [promiseId], references: [id])
-  district District @relation(fields: [districtId], references: [id])
+  promise    Promise  @relation(fields: [promiseId], references: [id])
+  district   District @relation(fields: [districtId], references: [id])
+
   @@id([promiseId, districtId])
 }
 
 model Indicator {
-  id String @id @default(uuid())
-  code String @unique
-  pillar String?
-  nameEn String
-  nameBn String
-  unit String
-  source String?
+  id        String           @id @default(uuid())
+  code      String           @unique
+  pillar    String?
+  nameEn    String
+  nameBn    String
+  unit      String
+  source    String?
   frequency String?
-  values IndicatorValue[]
+  values    IndicatorValue[]
 }
 
 model IndicatorValue {
-  id String @id @default(uuid())
+  id          String      @id @default(uuid())
   indicatorId String
-  indicator Indicator @relation(fields: [indicatorId], references: [id])
-  value Float
-  date DateTime
-  districtId String?
-  district District? @relation(fields: [districtId], references: [id])
-  source String?
-  confidence Confidence?
+  indicator   Indicator   @relation(fields: [indicatorId], references: [id])
+  value       Float
+  date        DateTime
+  districtId  String?
+  district    District?   @relation(fields: [districtId], references: [id])
+  source      String?
+  confidence  Confidence?
 }
 
 model EvidenceItem {
-  id String @id @default(uuid())
-  sourceUrl String?
-  title String
-  publisher String?
-  publishedAt DateTime?
-  sourceType SourceType
-  sourceTier SourceTier
-  extractedText String?
-  language String?
-  checksum String?
-  matchScore Float?
-  sourceId String?
-  scrapedSource ScrapedSource? @relation(fields: [sourceId], references: [id])
-  createdAt DateTime @default(now())
+  id              String          @id @default(uuid())
+  sourceUrl       String?         @db.Text
+  title           String
+  publisher       String?
+  publishedAt     DateTime?
+  sourceType      SourceType
+  sourceTier      SourceTier
+  extractedText   String?         @db.LongText
+  language        String?
+  checksum        String?
+  matchScore      Float?
+  sourceId        String?
+  scrapedSource   ScrapedSource?  @relation(fields: [sourceId], references: [id])
+  createdAt       DateTime        @default(now())
   statusHistories StatusHistory[]
 }
 
 model Update {
-  id String @id @default(uuid())
-  titleEn String
-  titleBn String
-  summaryEn String?
-  summaryBn String?
-  eventType String?
-  eventDate DateTime?
-  districtId String?
-  district District? @relation(fields: [districtId], references: [id])
-  confidence Confidence?
-  reviewStatus ReviewStatus @default(PENDING)
-  createdById String?
+  id           String          @id @default(uuid())
+  titleEn      String
+  titleBn      String
+  summaryEn    String?         @db.Text
+  summaryBn    String?         @db.Text
+  eventType    String?
+  eventDate    DateTime?
+  districtId   String?
+  district     District?       @relation(fields: [districtId], references: [id])
+  confidence   Confidence?
+  reviewStatus ReviewStatus    @default(PENDING)
+  createdById  String?
   approvedById String?
-  approvedAt DateTime?
-  createdAt DateTime @default(now())
-  promises PromiseUpdate[]
+  approvedAt   DateTime?
+  createdAt    DateTime        @default(now())
+  promises     PromiseUpdate[]
 }
 
 model PromiseUpdate {
   promiseId String
-  updateId String
-  promise Promise @relation(fields: [promiseId], references: [id])
-  update Update @relation(fields: [updateId], references: [id])
+  updateId  String
+  promise   Promise @relation(fields: [promiseId], references: [id])
+  update    Update  @relation(fields: [updateId], references: [id])
+
   @@id([promiseId, updateId])
 }
 
 model StatusHistory {
-  id String @id @default(uuid())
-  promiseId String
-  promise Promise @relation(fields: [promiseId], references: [id])
-  oldStatus PromiseStatus?
-  newStatus PromiseStatus
-  changedById String
-  reason String?
+  id             String         @id @default(uuid())
+  promiseId      String
+  promise        Promise        @relation(fields: [promiseId], references: [id])
+  oldStatus      PromiseStatus?
+  newStatus      PromiseStatus
+  changedById    String
+  reason         String?        @db.Text
   evidenceItemId String?
-  evidenceItem EvidenceItem? @relation(fields: [evidenceItemId], references: [id])
-  createdAt DateTime @default(now())
+  evidenceItem   EvidenceItem?  @relation(fields: [evidenceItemId], references: [id])
+  createdAt      DateTime       @default(now())
 }
 
 model GsdpTarget {
-  id String @id @default(uuid())
-  baseYear Int
-  baseGdpInr Decimal
-  targetYear Int
-  targetGdpUsd Decimal
-  scenario Scenario
-  growthRate Decimal
-  exchangeRate Decimal
-  notes String?
+  id           String   @id @default(uuid())
+  baseYear     Int
+  baseGdpInr   Decimal  @db.Decimal(15, 2)
+  targetYear   Int
+  targetGdpUsd Decimal  @db.Decimal(15, 2)
+  scenario     Scenario
+  growthRate   Decimal  @db.Decimal(5, 2)
+  exchangeRate Decimal  @db.Decimal(8, 2)
+  notes        String?  @db.Text
 }
 
 model GovernmentPeriod {
-  id String @id @default(uuid())
+  id            String    @id @default(uuid())
   chiefMinister String
-  partyName String
-  oathDate DateTime
-  termEndDate DateTime?
-  seatsWon Int
-  totalSeats Int
-  governor String
-  oathVenue String?
+  partyName     String
+  oathDate      DateTime
+  termEndDate   DateTime?
+  seatsWon      Int
+  totalSeats    Int
+  governor      String
+  oathVenue     String?
 }
 
 model ScrapedSource {
-  id          String      @id @default(uuid())
-  name        String
-  url         String
-  sourceType  SourceType
-  sourceTier  SourceTier
-  categoryTag String?
-  isActive    Boolean     @default(true)
+  id            String         @id @default(uuid())
+  name          String
+  url           String         @db.Text
+  sourceType    SourceType
+  sourceTier    SourceTier
+  categoryTag   String?
+  isActive      Boolean        @default(true)
   lastScrapedAt DateTime?
-  createdAt   DateTime    @default(now())
+  createdAt     DateTime       @default(now())
   evidenceItems EvidenceItem[]
 }
 
 model ScrapeRun {
-  id                  String    @id @default(uuid())
-  startedAt           DateTime  @default(now())
-  completedAt         DateTime?
-  status              String    // RUNNING, SUCCESS, FAILED
-  itemsDiscovered     Int       @default(0)
-  itemsMatched        Int       @default(0)
-  itemsPendingReview  Int       @default(0)
-  logDetails          String?
+  id                 String    @id @default(uuid())
+  startedAt          DateTime  @default(now())
+  completedAt        DateTime?
+  status             String    // RUNNING, SUCCESS, FAILED
+  itemsDiscovered    Int       @default(0)
+  itemsMatched       Int       @default(0)
+  itemsPendingReview Int       @default(0)
+  logDetails         String?   @db.LongText
 }
