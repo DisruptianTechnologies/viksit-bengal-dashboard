@@ -48,6 +48,14 @@ export class TestContext {
     return { ok: res.status === 200, status: res.status, data: res.data };
   }
 
+  async getHealth() {
+    if (this.isLive) {
+      return this.apiClient.get('/health');
+    }
+    const res = this.mockDispatcher.handleGetHealth();
+    return { ok: res.status === 200, status: res.status, data: res.data };
+  }
+
   async getMe() {
     if (this.isLive) {
       return this.apiClient.get('/auth/me');

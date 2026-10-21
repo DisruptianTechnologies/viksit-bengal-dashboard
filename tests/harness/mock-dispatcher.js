@@ -147,6 +147,21 @@ export class MockDispatcher {
     return { status: 200, data: user };
   }
 
+  handleGetHealth() {
+    return {
+      status: 200,
+      data: {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: 120,
+        environment: 'test',
+        database: { connected: true, provider: 'mysql' },
+        dataSummary: { promisesCount: this.promises.length, districtsCount: this.districts.length },
+        version: '1.0.0',
+      },
+    };
+  }
+
   handleGetDistricts() {
     return { status: 200, data: this.districts };
   }
