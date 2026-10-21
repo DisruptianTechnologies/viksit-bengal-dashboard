@@ -6,6 +6,7 @@
     "dev": "npm run dev --workspace=apps/web",
     "start": "npm run start --workspace=apps/web",
     "lint": "npm run lint --workspace=apps/web",
+    "bundle:hostinger": "node scripts/build-hostinger.js",
     "test:e2e": "node tests/e2e-runner.js"
   },
   "devDependencies": {

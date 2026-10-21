@@ -12,6 +12,8 @@ process.env.HOSTNAME = process.env.HOSTNAME || '0.0.0.0';
 
 // Detect standalone server location
 const standaloneCandidates = [
+  path.join(__dirname, 'apps', 'web', 'server.js'),
+  path.join(__dirname, 'server.js'),
   path.join(__dirname, 'apps', 'web', '.next', 'standalone', 'apps', 'web', 'server.js'),
   path.join(__dirname, 'apps', 'web', '.next', 'standalone', 'server.js'),
   path.join(__dirname, '.next', 'standalone', 'server.js'),

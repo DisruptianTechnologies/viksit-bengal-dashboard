@@ -6,4 +6,5 @@ dist
 .env.local
 .pgdata
 .turbo
-
+dist-hostinger
+dist-hostinger.zip

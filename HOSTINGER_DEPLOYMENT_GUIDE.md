@@ -1,101 +1,148 @@
 # Hostinger Unlimited Hosting — Complete Deployment Guide
 
-This guide covers deploying the **Viksit Bengal Dashboard** onto **Hostinger Unlimited Shared / Cloud Hosting** with Node.js and MySQL.
+This guide covers deploying the **Viksit Bengal Dashboard** onto **Hostinger Unlimited Shared / Cloud Hosting** with Node.js 20.x/22.x, MySQL, LiteSpeed, and optional Mixpost integration.
 
 ---
 
 ## 1. Prerequisites in Hostinger hPanel
 
-1. **Create MySQL Database**:
-   - Go to **hPanel $\rightarrow$ Databases $\rightarrow$ MySQL Databases**.
-   - Create a database: e.g. `u123456789_viksit`.
-   - Create a user and password: e.g. `u123456789_viksit_user` / `YourSecurePassword2026!`.
-   - Note down:
-     - **Database Host**: Usually `localhost` or `127.0.0.1`.
-     - **Port**: `3306`.
+### 1.1 Create MySQL Database
+1. Go to **hPanel $\rightarrow$ Databases $\rightarrow$ MySQL Databases**.
+2. Under **Create a New MySQL Database And Database User**:
+   - **Database Name**: e.g., `u123456789_viksit`
+   - **Username**: e.g., `u123456789_admin`
+   - **Password**: e.g., `YourSecurePassword2026!`
+3. Note your credentials:
+   - **Database Host**: `127.0.0.1` (or `localhost`)
+   - **Port**: `3306`
+   - **Constructed Connection String**:
+     ```env
+     DATABASE_URL="mysql://u123456789_admin:YourSecurePassword2026!@127.0.0.1:3306/u123456789_viksit"
+     ```
 
-2. **Configure Node.js Application**:
-   - Go to **hPanel $\rightarrow$ Advanced / Website $\rightarrow$ Node.js**.
-   - Click **Create Application**.
-   - **Node.js Version**: Select **20.x** (or 22.x).
-   - **Application Mode**: Production.
+### 1.2 Create Node.js Application
+1. Go to **hPanel $\rightarrow$ Websites $\rightarrow$ [Your Domain] $\rightarrow$ Node.js**.
+2. Click **Create Application**:
+   - **Node.js Version**: Select **20.x** (or 22.x LTS).
+   - **Application Mode**: **Production**.
    - **Application Root**: `public_html` (or your domain directory).
    - **Application Startup File**: `start.js`.
+   - **Application URL**: `https://yourdomain.com`.
+3. Keep the application stopped while deploying files.
 
 ---
 
-## 2. Environment Variables (.env)
+## 2. Deployment Workflow
 
-In your Hostinger Application Root, create or update `.env`:
+### Method A: Automated Pre-Packaged Bundle (Recommended)
 
-```env
-# Database Connection (Hostinger MySQL)
-DATABASE_URL="mysql://u123456789_viksit_user:YourSecurePassword2026!@127.0.0.1:3306/u123456789_viksit"
+Hostinger shared hosting limits build memory to 1GB–2GB RAM. Running `npm run build` locally guarantees a clean compile without resource limits.
 
-# Base URLs
-NEXT_PUBLIC_API_URL=
-NEXT_PUBLIC_APP_URL=https://yourdomain.com
+1. **Build and package locally**:
+   ```bash
+   npm run bundle:hostinger
+   ```
+   This generates `dist-hostinger.zip` containing:
+   - Compiled standalone Next.js server (`start.js`)
+   - Bundled static assets (`public/`, `_next/static`)
+   - LiteSpeed reverse proxy rules (`.htaccess`)
+   - Prisma MySQL schema and seed data
 
-# Cryptographic Token Secret
-JWT_SECRET="viksit_bengal_secure_jwt_secret_production_2026"
+2. **Upload to Hostinger**:
+   - Open **hPanel $\rightarrow$ File Manager**.
+   - Navigate to your Application Root (e.g., `public_html`).
+   - Upload `dist-hostinger.zip` and click **Extract**.
 
-# AI & Scraper Integrations (Add your API keys)
-GEMINI_API_KEY="your-google-gemini-api-key"
-FIRECRAWL_API_KEY="your-firecrawl-api-key"
-OPENROUTER_API_KEY="your-openrouter-api-key"
-OPENROUTER_BASE_URL="https://openrouter.ai/api/v1"
-OPENROUTER_MODEL="anthropic/claude-3.5-sonnet"
-```
+3. **Configure Environment**:
+   - In File Manager, create `.env` using `.env.example` as a template.
+   - Set your `DATABASE_URL`, `JWT_SECRET`, and `NEXT_PUBLIC_APP_URL`.
+
+4. **Initialize Database Tables & Seed**:
+   - Open **hPanel $\rightarrow$ Advanced $\rightarrow$ Terminal** (or SSH):
+     ```bash
+     node packages/database/dist/seed.js
+     ```
+
+5. **Start Application**:
+   - In **hPanel $\rightarrow$ Node.js**, click **Start Application**.
+   - The status indicator will turn Green (**Running**).
 
 ---
 
-## 3. Build & Launch
+### Method B: Git Clone & Server Build (Alternative)
 
-In Hostinger Web Terminal (or SSH):
+If you prefer building directly on Hostinger via SSH:
 
 ```bash
-# 1. Install dependencies
-npm install
+# 1. Connect via SSH
+ssh -p 65002 u123456789@your-server-ip
 
-# 2. Synchronize MySQL Schema (generates tables in Hostinger MySQL)
-npm run db:push --workspace=@viksit/database
+# 2. Navigate to application root
+cd public_html
 
-# 3. Seed initial categories, 23 districts, and promises
-npm run db:seed --workspace=@viksit/database
+# 3. Clone repository
+git clone https://github.com/DisruptianTechnologies/viksit-bengal-dashboard.git .
 
-# 4. Build standalone Next.js production output
-npm run build
+# 4. Install production dependencies
+npm install --omit=dev
 
-# 5. Start / Restart in hPanel Node.js Manager (or PM2)
+# 5. Push database schema to MySQL
+npx prisma db push --schema=packages/database/prisma/schema.prisma
+
+# 6. Seed initial commitments & 23 districts
+node packages/database/dist/seed.js
+
+# 7. Compile with memory ceiling
+NODE_OPTIONS="--max-old-space-size=1536" npm run build
+
+# 8. Start via hPanel Node.js or PM2
 node start.js
-# Or via PM2:
-# npx pm2 start ecosystem.config.js
 ```
 
 ---
 
-## 4. Production Health Verification
+## 3. LiteSpeed Reverse Proxy (`.htaccess`)
 
-Once started, test your live health endpoint:
-```bash
-curl https://yourdomain.com/api/health
+Ensure your `.htaccess` file in `public_html` has the following rewrite rules so LiteSpeed forwards port 443 traffic to the running Node.js process:
+
+```apache
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Force HTTPS
+  RewriteCond %{HTTPS} !=on
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # 2. Allow direct access to physical files (PWA icons, manifest, sw.js)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 3. Forward requests to Next.js standalone process (Port 3000)
+  RewriteRule ^(.*)$ http://127.0.0.1:3000/$1 [P,L]
+</IfModule>
 ```
-Expected response:
-```json
-{
-  "status": "healthy",
-  "timestamp": "2026-10-21T...",
-  "uptime": 45,
-  "environment": "production",
-  "database": {
-    "connected": true,
-    "provider": "mysql"
-  },
-  "dataSummary": {
-    "promisesCount": 141,
-    "districtsCount": 23,
-    "evidenceCount": 18
-  },
-  "version": "1.0.0"
-}
-```
+
+---
+
+## 4. Production Verification
+
+Once started, test the following endpoints:
+
+1. **System Health Probe**:
+   ```bash
+   curl https://yourdomain.com/api/health
+   ```
+   *Expected*: `{"status":"healthy","database":{"connected":true,"provider":"mysql"}}`
+
+2. **Landing Page**:
+   - English: `https://yourdomain.com/en`
+   - Bengali: `https://yourdomain.com/bn`
+
+3. **Social Media Dynamic Posters**:
+   - Landscape: `https://yourdomain.com/api/social/posters/landscape`
+   - Square: `https://yourdomain.com/api/social/posters/square`
+
+4. **PWA Offline Fallback**:
+   - Verify `https://yourdomain.com/sw.js` and `https://yourdomain.com/manifest.json`.
