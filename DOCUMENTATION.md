@@ -248,6 +248,15 @@ The platform is fully engineered as an installable Progressive Web App (PWA) del
 - **Bilingual Offline Fallback (`/offline.html`):** A lightweight, self-contained offline page styled in `#0A5C36` emerald providing retry connection controls in English and Bengali.
 - **PWA Install Promotion Banner (`PwaInstallPrompt.tsx`):** Listens for `beforeinstallprompt`, monitors online/offline status in real time, and renders a native-style install prompt banner on mobile devices.
 
+### 3.10 Social Media Automation, Poster/Video Generation & Mixpost Bridge
+The platform includes an automated media synthesis and syndication pipeline that bridges landing page live metrics with social channels:
+- **Vector Poster Generator (`apps/web/lib/social-media/poster-generator.ts`):** Dynamically constructs branded SVG posters across 3 aspect ratios (`1200x630` for X/FB/LinkedIn, `1080x1080` for Instagram Feed, and `1080x1920` for Shorts/Reels/Stories) with emerald `#0A5C36` gradients, gold `#C5961A` telemetry badges, and live Bengali/English delta figures.
+- **AI Bilingual Copywriter (`apps/web/lib/social-media/copywriter.ts`):** Formats platform-specific captions with strict character boundaries (e.g., <280 chars for X, paragraph structures with hashtags for FB/LinkedIn, and title/description pairs for YouTube Shorts).
+- **15-Second Teaser Video Storyboard (`apps/web/lib/social-media/teaser-video-generator.ts`):** Generates a 4-scene animated storyboard sequence (`INTRO`, `METRICS_DELTA`, `MILESTONE`, `OUTRO_CTA`) with audio cue track specifications, key metric callouts, and citizen QR call-to-actions.
+- **Inovector/Mixpost Bridge (`apps/web/lib/social-media/mixpost-bridge.ts`):** Formats payloads strictly matching the `inovector/mixpost` Laravel package API (`/mixpost/posts/store`) including accounts, versions, media links, and scheduled time tags.
+- **Native Social Dispatcher (`apps/web/lib/social-media/platform-adapters.ts`):** Direct API adapters for X (API v2), Meta/Facebook Graph API, Instagram Media Publish API, LinkedIn UGC Posts API, and YouTube Data API v3 with automatic offline simulation fallbacks for test execution.
+- **Admin Social Media Studio (`SocialMediaStudio.tsx`):** Interactive CMS workspace tab (Tab 6) in `/admin` allowing administrators to preview posters, scrub the 15-second video storyboard, copy platform captions, and trigger multi-channel syndication with one click.
+
 ---
 
 ## 4. Complete API Endpoints Reference
@@ -276,6 +285,10 @@ All API endpoints are available on port `3000` via Next.js App Router route hand
 | `POST` | `/api/chat/query` | Public | Queries the bilingual *Sonar Bondhu* AI policy assistant. |
 | `GET` | `/api/membership` | Public | Returns membership ledger summary, UPI details, and verified contributor tallies. |
 | `POST` | `/api/membership` | Public | Submits a lifetime membership application with UPI UTR transaction proof. |
+| `GET` | `/api/social/generate` | Public | Returns today's SVG poster, bilingual multi-platform captions, and 15s video storyboard. |
+| `POST` | `/api/social/generate` | Public / Admin | Generates custom social creative bundles matching requested format, locale, or custom delta. |
+| `POST` | `/api/social/publish` | `Bearer <JWT>` (`ADMIN`) | Dispatches creatives to X, Facebook, Instagram, LinkedIn, YouTube, and queues in Mixpost. |
+| `GET` | `/api/social/posters/[format]` | Public | Directly serves dynamic vector SVG posters (`landscape`, `square`, `story`) with `image/svg+xml`. |
 
 ---
 
@@ -426,6 +439,17 @@ JWT_SECRET="generate-a-secure-random-64-character-string"
 GEMINI_API_KEY="your-google-gemini-api-key"
 FIRECRAWL_API_KEY=""
 OPENROUTER_API_KEY=""
+
+# Optional Social Media Automation & Mixpost Bridge
+MIXPOST_API_URL="https://your-mixpost-domain.com"
+MIXPOST_API_TOKEN="your-mixpost-bearer-token"
+TWITTER_BEARER_TOKEN=""
+META_PAGE_ACCESS_TOKEN=""
+META_PAGE_ID=""
+INSTAGRAM_ACCOUNT_ID=""
+LINKEDIN_ACCESS_TOKEN=""
+LINKEDIN_AUTHOR_URN=""
+YOUTUBE_OAUTH_TOKEN=""
 ```
 
 ### Step 4: Build & Launch

@@ -23,6 +23,7 @@ import * as productionEndpointsTier1 from './tier1-feature-coverage/production-e
 import * as authVerifyTier1 from './tier1-feature-coverage/auth-verify.tier1.test.js';
 import * as persistenceSyncTier1 from './tier1-feature-coverage/persistence-sync.tier1.test.js';
 import * as pwaTier1 from './tier1-feature-coverage/pwa.tier1.test.js';
+import * as socialAutomationTier1 from './tier1-feature-coverage/social-automation.tier1.test.js';
 
 import * as authTier2 from './tier2-boundaries/auth-boundaries.tier2.test.js';
 import * as districtsTier2 from './tier2-boundaries/districts-boundaries.tier2.test.js';
@@ -73,6 +74,7 @@ const SUITES = [
   { tier: '1', name: 'Tier 1: Token Verification & RBAC Permissions (/api/auth/verify)', runner: authVerifyTier1.run },
   { tier: '1', name: 'Tier 1: Database Persistence & Live Store Smart Cache Sync', runner: persistenceSyncTier1.run },
   { tier: '1', name: 'Tier 1: Progressive Web App (PWA) Manifest, Icons & Service Worker', runner: pwaTier1.run },
+  { tier: '1', name: 'Tier 1: Social Posters, Teaser Videos & Multi-Platform Dispatch', runner: socialAutomationTier1.run },
 
   // Tier 2
   { tier: '2', name: 'Tier 2: Auth Boundaries (Empty DTOs, Tampered & Expired Tokens)', runner: authTier2.run },

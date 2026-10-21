@@ -6,6 +6,10 @@
 
 import { DISTRICTS_23, USERS, ENUMS, SAMPLE_PROMISE, SAMPLE_EVIDENCE } from './fixtures.js';
 import { verifyAuthToken } from '../../apps/web/lib/auth-guard.js';
+import { generateSocialPoster, POSTER_FORMATS } from '../../apps/web/lib/social-media/poster-generator.js';
+import { generatePlatformCaptions } from '../../apps/web/lib/social-media/copywriter.js';
+import { generateTeaserVideoSequence } from '../../apps/web/lib/social-media/teaser-video-generator.js';
+import { SocialDispatcherService } from '../../apps/web/lib/social-media/platform-adapters.js';
 
 export class MockDispatcher {
   constructor() {
@@ -460,6 +464,61 @@ export class MockDispatcher {
           { code: 'TEA-01', title: 'Tea Modernisation', status: 'FUNDED' }
         ]
       }
+    };
+  }
+
+  handleSocialGenerate(dto = {}) {
+    const delta = {
+      date: new Date().toISOString().slice(0, 10),
+      todayVerifiedItemsCount: 5,
+      todayPromisesMovedCount: 2,
+      todayOutlayDeltaCr: 750,
+      velocityBps: 18,
+      topMilestone: 'Kolkata-Siliguri High-Speed Logistics Corridor Phase 2 Approved',
+      topMilestoneBn: 'কলকাতা-শিলিগুড়ি দ্রুতগতির লজিস্টিক করিডোর দ্বিতীয় পর্যায় অনুমোদিত',
+      cagrTarget: '13.0%',
+      realizedGsdpUsd: '$249.4B'
+    };
+
+    const format = POSTER_FORMATS[dto.format] || POSTER_FORMATS.LANDSCAPE_1200x630;
+    const locale = dto.locale || 'en';
+    const poster = generateSocialPoster(delta, format);
+    const captions = generatePlatformCaptions(delta, locale);
+    const teaserVideo = generateTeaserVideoSequence(delta);
+
+    return {
+      status: 200,
+      data: {
+        format: dto.format || 'LANDSCAPE_1200x630',
+        locale,
+        posterSvg: poster.svg,
+        captions,
+        teaserVideo
+      }
+    };
+  }
+
+  async handleSocialPublish(dto = {}) {
+    const dispatcher = new SocialDispatcherService();
+    const result = await dispatcher.publishToAllChannels({
+      delta: dto.delta || {
+        date: new Date().toISOString().slice(0, 10),
+        todayVerifiedItemsCount: 5,
+        todayPromisesMovedCount: 2,
+        todayOutlayDeltaCr: 750,
+        velocityBps: 18,
+        topMilestone: 'Kolkata-Siliguri High-Speed Logistics Corridor Phase 2 Approved',
+        topMilestoneBn: 'কলকাতা-শিলিগুড়ি দ্রুতগতির লজিস্টিক করিডোর দ্বিতীয় পর্যায় অনুমোদিত',
+        cagrTarget: '13.0%',
+        realizedGsdpUsd: '$249.4B'
+      },
+      channels: dto.channels || ['X', 'FACEBOOK', 'INSTAGRAM', 'LINKEDIN', 'YOUTUBE'],
+      simulate: dto.simulate ?? true
+    });
+
+    return {
+      status: 200,
+      data: result
     };
   }
 }

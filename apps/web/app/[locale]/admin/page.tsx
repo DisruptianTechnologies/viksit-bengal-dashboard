@@ -34,7 +34,9 @@ import {
   Users,
   KeyRound,
   LogIn,
+  Share2,
 } from 'lucide-react';
+import { SocialMediaStudio } from '@/components/social/SocialMediaStudio';
 import { RealtimeAnalyticsHub } from '@/components/dashboard/RealtimeAnalyticsHub';
 import {
   LiveAnalyticsSummary,
@@ -84,7 +86,7 @@ export default function AdminPage() {
   const [showAuthModal, setShowAuthModal] = React.useState(false);
 
   const [activeWorkspaceTab, setActiveWorkspaceTab] = React.useState<
-    'analytics' | 'promises' | 'evidence' | 'scraper' | 'rbac'
+    'analytics' | 'promises' | 'evidence' | 'scraper' | 'rbac' | 'social'
   >('analytics');
 
   const [loading, setLoading] = React.useState(false);
@@ -899,6 +901,12 @@ export default function AdminPage() {
                 labelEn: `5. Users, Google Auth & Roles (${rbacUsers.length || 6})`,
                 labelBn: `৫. ব্যবহারকারী ও রোল অনুমতি (${fmt(rbacUsers.length || 6)})`,
               },
+              {
+                id: 'social',
+                icon: Share2,
+                labelEn: '6. Social Media Studio & Mixpost',
+                labelBn: '৬. সোশ্যাল মিডিয়া স্টুডিও ও মিক্সপোস্ট',
+              },
             ].map((tab) => {
               const Icon = tab.icon;
               return (
@@ -1701,6 +1709,10 @@ export default function AdminPage() {
       )}
 
       {/* WORKSPACE TAB 5: USERS, GOOGLE AUTH & ROLE PERMISSIONS (RBAC CONSOLE) */}
+      {activeWorkspaceTab === 'social' && (
+        <SocialMediaStudio token={token} userRole={user?.role} />
+      )}
+
       {activeWorkspaceTab === 'rbac' && (
         <div className="space-y-6">
           {/* RBAC Summary Strip */}

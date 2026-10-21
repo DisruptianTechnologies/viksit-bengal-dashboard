@@ -79,6 +79,14 @@ export class TestContext {
     if (path.includes('/auth/verify')) {
       return this.verifyAuth(body, options);
     }
+    if (path.includes('/api/social/generate')) {
+      const res = this.mockDispatcher.handleSocialGenerate(body);
+      return { ok: res.status === 200, status: res.status, body: res.data, data: res.data };
+    }
+    if (path.includes('/api/social/publish')) {
+      const res = await this.mockDispatcher.handleSocialPublish(body);
+      return { ok: res.status === 200, status: res.status, body: res.data, data: res.data };
+    }
     if (this.isLive) {
       const res = await this.apiClient.post(path, body, options?.headers);
       return { ok: res.ok, status: res.status, body: res.data, data: res.data };
