@@ -25,6 +25,7 @@ An open-governance, real-time econometric and policy accountability platform tra
   - **Promise vs. Results CSV Exporter:** Export the filtered promise dataset (`code`, `title`, `titleBn`, `status`, `sector`, `resultCompletionPct`, `verifiedEvidenceCount`, `sanctionedOutlayCr`, `latestResultMilestone`, `districtsCovered`, `responsibleDepartment`, `lastVerifiedDate`) as a UTF-8 BOM CSV report.
   - **Evidence Audit Moderation Queue & Live Source Scraper Telemetry**.
 - **Bilingual (`English` & `বাংলা`) + WCAG 2.2 Level AA Compliant:** 100% translation parity, automatic Bengali numeral conversion (`০–৯`), interactive 23-district Choropleth GIS map with accessible table fallback, and the **Sonar Bondhu** bilingual AI policy assistant.
+- **Progressive Web App (PWA) & Mobile Installable:** Full offline capabilities, Web App Manifest (`manifest.json`), multi-resolution maskable icons, Service Worker (`sw.js`) with Cache-First / Network-First / Stale-While-Revalidate caching, custom bilingual install banner (`PwaInstallPrompt`), and offline fallback (`offline.html`).
 
 ---
 
@@ -82,6 +83,6 @@ npm run lint
 # WCAG 2.2 AA Accessibility & Bilingual Parity Suite (188 checks)
 node apps/web/__tests__/wcag-accessibility.test.mjs
 
-# Master 4-Tier E2E Test Suite (136 checks passing in 35ms)
+# Master 4-Tier E2E Test Suite (151 checks passing in 31ms)
 npm run test:e2e
 ```

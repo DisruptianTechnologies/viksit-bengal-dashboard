@@ -8,11 +8,23 @@ import Footer from '@/components/layout/Footer';
 import { SabaiFoundationModal } from '@/components/citizen/SabaiFoundationModal';
 import { AuthProvider } from '@/components/auth/AuthContext';
 import { locales, type Locale } from '@/i18n';
+import { PwaInstallPrompt } from '@/components/pwa/PwaInstallPrompt';
 
 export const metadata: Metadata = {
   title: 'Viksit Bengal Dashboard',
   description:
     'West Bengal Governance, Policy Commitments, and $1 Trillion Economic Progress Tracker across 23 districts.',
+  manifest: '/manifest.json',
+  themeColor: '#0A5C36',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'Viksit Bengal',
+  },
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/apple-touch-icon.png',
+  },
   openGraph: {
     title: 'Viksit Bengal Dashboard',
     description:
@@ -67,6 +79,7 @@ export default async function LocaleLayout({
             </main>
             <Footer />
             <SabaiFoundationModal locale={locale} enableGlobalTrigger={true} />
+            <PwaInstallPrompt locale={locale} />
           </AuthProvider>
         </NextIntlClientProvider>
       </body>

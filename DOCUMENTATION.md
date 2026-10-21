@@ -1,9 +1,9 @@
 # Viksit Bengal Dashboard & $1 Trillion Economy — Master Technical Documentation
 
-> **Status:** Production-Ready Full-Stack Platform (Verified: 136/136 Automated Checks Passing)  
-> **Runtime Architecture:** Next.js 14 App Router (Standalone Full-Stack on Port `3000`) + Resilient MySQL / MariaDB Database Layer + Native Hostinger Unlimited Hosting Compatibility  
+> **Status:** Production-Ready Full-Stack Platform (Verified: 151/151 Automated Checks Passing)  
+> **Runtime Architecture:** Next.js 14 App Router (Standalone Full-Stack on Port `3000`) + Resilient MySQL / MariaDB Database Layer + Native Hostinger Unlimited Hosting Compatibility + Progressive Web App (PWA)  
 > **Last Updated:** October 2026  
-> **Standards Compliance:** WCAG 2.2 Level AA (`188/188` checks), RBAC & 007 Defense-in-Depth (`136/136` E2E checks), 100% Bilingual Parity (`en` & `bn`)
+> **Standards Compliance:** WCAG 2.2 Level AA (`189/189` checks), RBAC & 007 Defense-in-Depth (`151/151` E2E checks), 100% Bilingual Parity (`en` & `bn`), PWA Installable Criteria (100%)
 
 ---
 
@@ -235,6 +235,18 @@ The visual analytics engine provides interactive data exploration across both pu
 ### 3.8 Citizen Evidence Submission & Sabai Foundation Membership
 - **Community Evidence Portal (`CitizenEvidenceModal.tsx`):** Citizens and field researchers can submit project photos, news reports, and local execution status directly to the audit ledger.
 - **Sabai Foundation Lifetime Membership (`SabaiFoundationModal.tsx`):** Facilitates direct UPI QR contributions (minimum ₹500), UTR transaction verification logging, and registration with the foundation's civic initiative.
+
+### 3.9 Progressive Web App (PWA) & Mobile Architecture
+The platform is fully engineered as an installable Progressive Web App (PWA) delivering a native mobile experience for citizens and field researchers:
+- **Web App Manifest (`/manifest.json`):** Configured with `display: "standalone"`, `orientation: "portrait-primary"`, `theme_color: "#0A5C36"`, and shortcuts pointing directly to the Executive Dashboard, 141 Promises Catalog, and 23-District Map.
+- **Multi-Resolution Icon Suite:** Standard and maskable adaptive icons (`icon-192x192.png`, `icon-512x512.png`, `maskable-icon-512x512.png`), plus `apple-touch-icon.png` (180x180) and vector SVG favicon (`favicon.svg`).
+- **Service Worker (`/sw.js`):**
+  - **Cache-First Strategy:** Static assets (CSS, JS bundles, images, icons, fonts) are pre-cached in `viksit-bengal-static-v1.0.0` for instantaneous loading.
+  - **Network-First Strategy with Offline Fallback:** HTML page navigation attempts network fetching and automatically falls back to `/offline.html` when offline.
+  - **Stale-While-Revalidate Strategy:** Telemetry endpoints (`/api/analytics`, `/api/districts`, `/api/promises`) serve instant cached datasets while background-refreshing live deltas.
+  - **Immediate Activation:** Utilizes `self.skipWaiting()` on install and `self.clients.claim()` on activate to ensure seamless client updates.
+- **Bilingual Offline Fallback (`/offline.html`):** A lightweight, self-contained offline page styled in `#0A5C36` emerald providing retry connection controls in English and Bengali.
+- **PWA Install Promotion Banner (`PwaInstallPrompt.tsx`):** Listens for `beforeinstallprompt`, monitors online/offline status in real time, and renders a native-style install prompt banner on mobile devices.
 
 ---
 
@@ -496,15 +508,18 @@ sudo certbot --nginx -d yourdomain.com
 
 ## 10. Automated Verification & Test Suite Reference
 
-The platform features a 4-Tier Test-Driven Development (TDD) verification suite consisting of **136 automated test cases** that execute in under **50 milliseconds**:
+The platform features a 4-Tier Test-Driven Development (TDD) verification suite consisting of **151 automated test cases** that execute in under **35 milliseconds**:
 
 ```bash
 npm run test:e2e
 ```
 
 ### Test Suite Structure
-1. **Tier 1: Feature Coverage (45 tests)**
+1. **Tier 1: Feature Coverage (60 tests)**
    - Authentication & JWT token issuance (`POST /api/auth/login`, `GET /api/auth/me`).
+   - Token verification and granular RBAC permissions (`POST /api/auth/verify`).
+   - Progressive Web App (PWA) manifest, service worker (`/sw.js`), icons & offline fallback.
+   - Database persistence sync and resilient caching proxy.
    - District registry & detail lookups (`GET /api/districts`, `GET /api/districts/:code`).
    - Policy commitment lifecycle and status history timelines.
    - Evidence submission, source tier categorization, and moderation.
