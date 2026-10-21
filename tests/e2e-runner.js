@@ -20,6 +20,8 @@ import * as databaseTier1 from './tier1-feature-coverage/database.tier1.test.js'
 import * as authGuardTier1 from './tier1-feature-coverage/auth-guard.tier1.test.js';
 import * as externalApisTier1 from './tier1-feature-coverage/external-apis.tier1.test.js';
 import * as productionEndpointsTier1 from './tier1-feature-coverage/production-endpoints.tier1.test.js';
+import * as authVerifyTier1 from './tier1-feature-coverage/auth-verify.tier1.test.js';
+import * as persistenceSyncTier1 from './tier1-feature-coverage/persistence-sync.tier1.test.js';
 
 import * as authTier2 from './tier2-boundaries/auth-boundaries.tier2.test.js';
 import * as districtsTier2 from './tier2-boundaries/districts-boundaries.tier2.test.js';
@@ -67,6 +69,8 @@ const SUITES = [
   { tier: '1', name: 'Tier 1: Cryptographic JWT & Dual Auth RBAC Guard', runner: authGuardTier1.run },
   { tier: '1', name: 'Tier 1: External APIs & Gazette Intelligence Integration', runner: externalApisTier1.run },
   { tier: '1', name: 'Tier 1: Production Health, Auth/Me & District Endpoints', runner: productionEndpointsTier1.run },
+  { tier: '1', name: 'Tier 1: Token Verification & RBAC Permissions (/api/auth/verify)', runner: authVerifyTier1.run },
+  { tier: '1', name: 'Tier 1: Database Persistence & Live Store Smart Cache Sync', runner: persistenceSyncTier1.run },
 
   // Tier 2
   { tier: '2', name: 'Tier 2: Auth Boundaries (Empty DTOs, Tampered & Expired Tokens)', runner: authTier2.run },

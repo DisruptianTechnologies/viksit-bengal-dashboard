@@ -65,6 +65,27 @@ export class TestContext {
     return { ok: res.status === 200, status: res.status, data: res.data };
   }
 
+  async verifyAuth(body = {}, options = {}) {
+    if (this.isLive) {
+      const res = await this.apiClient.post('/auth/verify', body, options?.headers);
+      return { ok: res.ok, status: res.status, body: res.data, data: res.data };
+    }
+    const authHeader = options?.headers?.Authorization || options?.headers?.authorization || (this.token ? `Bearer ${this.token}` : undefined);
+    const res = this.mockDispatcher.handleVerifyAuth(body, authHeader);
+    return { ok: res.status === 200, status: res.status, body: res.data, data: res.data };
+  }
+
+  async post(path, body = {}, options = {}) {
+    if (path.includes('/auth/verify')) {
+      return this.verifyAuth(body, options);
+    }
+    if (this.isLive) {
+      const res = await this.apiClient.post(path, body, options?.headers);
+      return { ok: res.ok, status: res.status, body: res.data, data: res.data };
+    }
+    return { ok: false, status: 404, body: { message: `Route ${path} not mocked` } };
+  }
+
   async getDistricts() {
     if (this.isLive) {
       return this.apiClient.get('/districts');

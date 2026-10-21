@@ -116,7 +116,7 @@ try {
 
 export async function checkDatabaseHealth(): Promise<DatabaseHealthStatus> {
   const dbUrl = process.env.DATABASE_URL || '';
-  let provider: DatabaseHealthStatus['provider'] = 'mock';
+  let provider: DatabaseHealthStatus['provider'] = 'mysql';
   if (dbUrl.startsWith('mysql:') || dbUrl.startsWith('mariadb:')) {
     provider = 'mysql';
   } else if (dbUrl.startsWith('postgresql:') || dbUrl.startsWith('postgres:')) {

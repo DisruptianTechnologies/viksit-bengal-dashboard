@@ -5,6 +5,7 @@
  */
 
 import { DISTRICTS_23, USERS, ENUMS, SAMPLE_PROMISE, SAMPLE_EVIDENCE } from './fixtures.js';
+import { verifyAuthToken } from '../../apps/web/lib/auth-guard.js';
 
 export class MockDispatcher {
   constructor() {
@@ -145,6 +146,53 @@ export class MockDispatcher {
     const user = this.verifyJwt(authHeader);
     if (!user) return { status: 401, data: { message: 'Unauthorized' } };
     return { status: 200, data: user };
+  }
+
+  handleVerifyAuth(body = {}, authHeader) {
+    let token = body.token;
+    if (!token && authHeader) {
+      if (authHeader.startsWith('Bearer ')) {
+        token = authHeader.slice(7).trim();
+      } else {
+        token = authHeader.trim();
+      }
+    }
+
+    if (!token) {
+      return { status: 401, data: { valid: false, error: 'Token missing' } };
+    }
+
+    let user = this.verifyJwt(`Bearer ${token}`);
+    if (!user) {
+      user = verifyAuthToken(token);
+    }
+
+    if (!user) {
+      return { status: 401, data: { valid: false, error: 'Invalid or expired token signature' } };
+    }
+
+    const role = user.role || 'PUBLIC';
+    const permissions = {
+      canModerateEvidence: role === 'ADMIN',
+      canOverridePromises: role === 'ADMIN',
+      canSubmitEvidence: role === 'ADMIN' || role === 'RESEARCHER',
+      canRegisterPromises: role === 'ADMIN' || role === 'RESEARCHER',
+      canViewDashboard: true
+    };
+
+    return {
+      status: 200,
+      data: {
+        valid: true,
+        user: {
+          id: user.sub || user.email,
+          email: user.email,
+          name: user.name || user.email,
+          role
+        },
+        permissions
+      }
+    };
   }
 
   handleGetHealth() {
